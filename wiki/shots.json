@@ -1,0 +1,9 @@
+{
+  "shots": [
+    {"from": "../minecraft-huey/run/booth/screenshots/booth-hover.png", "to": "img/flying.webp"},
+    {"from": "run/booth/screenshots/booth-container.png", "to": "img/container.webp", "crop": [240, 80, 1040, 600]},
+    {"from": "run/booth/screenshots/booth-container-open.png", "to": "img/container-open.webp", "crop": [240, 80, 1040, 600]},
+    {"from": "../minecraft-chinook/run/booth/screenshots/booth-sling.png", "to": "img/sling.webp"},
+    {"from": "../minecraft-huey/run/booth/screenshots/booth-spraying.png", "to": "img/spraying.webp"}
+  ]
+}
