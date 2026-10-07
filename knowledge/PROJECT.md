@@ -14,7 +14,7 @@ flight, the sling and the crop sprayer; aircraft mods (`minecraft-huey`, `minecr
 data. The plan is `~/.claude/plans/i-want-to-add-curious-locket.md`. Decisions D-0001 (flight),
 D-0002 (sling), D-0003 (sprayer).
 
-## Status (2026-10-07): built, gated and filmed with both aircraft; photos passed by Rusty
+## Status: 1.0.0 released 2026-10-07 in pack 1.75.0
 
 - Gate: 49 JUnit, 33 GameTests and the booth (13 checks) green; every new rule run against its
   mutation and caught.
@@ -54,8 +54,10 @@ D-0002 (sling), D-0003 (sprayer).
   filming the container on its hook and the sprayer working a field.
 - Rusty passed the booth photos on 2026-10-07 ("Looks good"). Not done: the playtest on the 4070
   (flight feel is tuned there).
-- Nothing released; no GitHub repo yet (created at release on Rusty's word). Pack 1.75.0 with
-  Vanilla Wheels 1.12.0, the Huey and the Chinook.
+- Released 2026-10-07 in pack 1.75.0 on Rusty's "looks good, fix the latent key bug then release"
+  (the server repo's `knowledge/releases/pack-1.75.0.md`): public repo created then, the jar's sha1
+  `c1b2dd91` on GitHub and on the server. Not yet seen: anyone flying it on the box. With Vanilla
+  Wheels 1.12.0, the Huey and the Chinook.
 
 ## Shape
 
