@@ -16,8 +16,17 @@ D-0002 (sling), D-0003 (sprayer).
 
 ## Status (2026-10-07): built, gated and filmed with both aircraft; photos passed by Rusty
 
-- Gate: 31 JUnit, 29 GameTests and the booth (4 checks) green; every new rule run against its
+- Gate: 31 JUnit, 29 GameTests and the booth (13 checks) green; every new rule run against its
   mutation and caught.
+- Found in the 4070 playtest (2026-10-07, Rusty: "left shift is not descending"): Descend on Left
+  Shift never worked. NeoForge judges a key with no modifier as up while Shift, Control or Alt is
+  held in any context but the game's own, and the aircraft keys have their own context: holding
+  Shift switched Descend off, and G, V and R with it. The aircraft keys now judge their modifier
+  as the game's keys do (`RotorcraftKeys.AircraftKey`), and are let go whenever the player is not
+  aboard (a Shift let go after getting out had stayed down into the next boarding). The booth now
+  flies a box helicopter on real key presses (`devtools/booth/xkey.py`, XTEST on the booth's own
+  display): on the old keys it failed Descend, the hook under Shift and the descent; without the
+  let-go, the next boarding. Earlier gates scripted the flight input and could not see it.
 - Built: flight, the sling, the crop sprayer (D-0001 to D-0003); the Sling Container and the
   sprayer's icon, recipe and hiss; the hull of boxes and the rotors' reach (D-0001); a landed
   hooked load stops the hook over its eye (D-0002); the booth; the wiki page.

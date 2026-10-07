@@ -23,7 +23,11 @@ import com.chunkworks.rotorcraft.SlungLoad;
 import com.chunkworks.rotorcraft.client.RotorcraftKeys;
 import com.chunkworks.rotorcraft.domain.FlightInput;
 import com.chunkworks.vanillawheels.Vehicle;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -61,13 +65,15 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The protocol's own equipment on film, in a flat world at noon: the Sling Container parked, from
  * its front quarter and its open back with three cows aboard; then the box helicopter hovering with
- * the box crate hanging on its rope; and the Crop Sprayer item. One {@code booth: PASS} or
+ * the box crate hanging on its rope; and the Crop Sprayer item. Then the booth's player flies a box
+ * helicopter on real key presses (see {@link #keys}). One {@code booth: PASS} or
  * {@code booth: FAIL} line per check; the Gradle task reads them. Client only, active only under
  * {@code rotorcraft.photobooth}. The helicopters' own booths (the Huey's, the Chinook's) film the
  * container on a hook and the sprayer at work.
@@ -265,12 +271,108 @@ public final class RotorcraftBooth {
             verdict("the box crate hangs from the box helicopter's hook", () -> crate != null && crate.tower() != null && crate.getY() > ground + 0.5
                     ? null : "crate " + crate + (crate == null ? "" : ", tower " + crate.tower()));
         }));
+        t = keys(mc, s, t + 20);
         s.add(new Step(t += 20, () -> {
             LOG.info("booth: PASS all checks ran");
             phase = Phase.DONE;
             mc.stop();
         }));
         return s;
+    }
+
+    // --- the keys, pressed for real -------------------------------------------
+
+    private static UUID flown;
+    private static double hover;
+    private static Process shiftDown;
+
+    /**
+     * The booth's player flies a box helicopter on real key presses (devtools/booth/xkey.py): Space
+     * climbs it, it holds its height with no key held, held Left Shift brings it down and leaves G
+     * working, and a Shift let go after getting out is not still held on boarding again. Real
+     * presses, because NeoForge reads Shift from GLFW's own key state, which nothing else moves.
+     * effects: adds the steps from {@code t}; returns the last step's tick
+     */
+    private static int keys(Minecraft mc, List<Step> s, int t) {
+        s.add(new Step(t, () -> onServer(mc, sp -> {
+            sp.getAbilities().flying = false;
+            sp.onUpdateAbilities();
+            ServerLevel level = sp.serverLevel();
+            if (!(Vehicle.create(level, Rigs.BOX_HELI, new Vec3(HX + 40.0, ground, HZ), EAST) instanceof Aircraft a)) {
+                LOG.error("booth: FAIL the box helicopter is an aircraft");
+                return;
+            }
+            a.setFuel(a.tank().capacity());
+            level.addFreshEntity(a);
+            sp.startRiding(a, true);
+            flown = a.getUUID();
+        })));
+        s.add(new Step(t += 60, () -> {
+            verdict("the booth's player flies the box helicopter", () -> client(mc, flown) instanceof Aircraft a
+                    && a.getControllingPassenger() == mc.player ? null : "riding " + (mc.player == null ? null : mc.player.getVehicle()));
+            xkey("down", "space");
+        }));
+        s.add(new Step(t += 50, () -> xkey("up", "space")));
+        s.add(new Step(t += 40, () -> {
+            Aircraft a = client(mc, flown);
+            hover = a == null ? Double.NaN : a.getY();
+            verdict("a real Space climbs it", () -> hover > ground + 3.0 ? null : "height " + (hover - ground));
+        }));
+        s.add(new Step(t += 40, () -> {
+            Aircraft a = client(mc, flown);
+            double y = a == null ? Double.NaN : a.getY();
+            verdict("it holds its height with no key held", () -> Math.abs(y - hover) < 0.3 ? null : "moved " + (y - hover));
+            hover = y;
+            shiftDown = xkey("down", "Shift_L");
+        }));
+        s.add(new Step(t += 40, () -> {
+            verdict("the key helper pressed Left Shift", () -> shiftDown != null && !shiftDown.isAlive() && shiftDown.exitValue() == 0
+                    ? null : "helper " + (shiftDown == null ? "not started" : shiftDown.isAlive() ? "still running" : "exit " + shiftDown.exitValue()));
+            verdict("a real Left Shift reaches the game window", () -> InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)
+                    ? null : "GLFW reads Left Shift up");
+            verdict("Descend is down while Left Shift is held", () -> RotorcraftKeys.DESCEND.isDown() ? null : "Descend reads up");
+            xkey("down", "g");
+        }));
+        s.add(new Step(t += 40, () -> {
+            Aircraft a = client(mc, flown);
+            double y = a == null ? Double.NaN : a.getY();
+            verdict("the hook key works with Left Shift held", () -> RotorcraftKeys.HOOK.isDown() ? null : "Hook reads up");
+            verdict("it comes down while Left Shift is held", () -> y < hover - 1.0 ? null : "moved " + (y - hover));
+            xkey("up", "g");
+            // Out with Shift still held (the server's dismount: R works only near the ground).
+            onServer(mc, ServerPlayer::stopRiding);
+        }));
+        s.add(new Step(t += 20, () -> xkey("up", "Shift_L")));
+        s.add(new Step(t += 40, () -> onServer(mc, sp -> {
+            if (sp.serverLevel().getEntity(flown) instanceof Aircraft a) {
+                sp.startRiding(a, true);
+            }
+        })));
+        s.add(new Step(t += 20, () -> {
+            verdict("aboard again, a Left Shift let go off the aircraft is not still down", () -> client(mc, flown) instanceof Aircraft a
+                    && a.getControllingPassenger() == mc.player && !RotorcraftKeys.DESCEND.isDown()
+                    ? null : "aboard " + (mc.player == null ? null : mc.player.getVehicle()) + ", Descend down " + RotorcraftKeys.DESCEND.isDown());
+            onServer(mc, ServerPlayer::stopRiding);
+        }));
+        return t;
+    }
+
+    /**
+     * effects: starts devtools/booth/xkey.py pressing ({@code down}) or letting go ({@code up}) of
+     * {@code keysym} on this client's display, and returns it; null, with a FAIL line, if it would
+     * not start. The helper refuses a display with a window manager, so it never types on a desktop.
+     */
+    @org.jetbrains.annotations.Nullable
+    private static Process xkey(String action, String keysym) {
+        Path script = Path.of(System.getProperty("user.dir"), "..", "..", "devtools", "booth", "xkey.py").normalize();
+        Path uv = Path.of(System.getProperty("user.home"), ".local", "bin", "uv");
+        try {
+            return new ProcessBuilder(Files.isExecutable(uv) ? uv.toString() : "uv", "run", "--no-project", "--with", "python-xlib",
+                    "python", script.toString(), action, keysym).inheritIO().start();
+        } catch (IOException e) {
+            LOG.error("booth: FAIL the key helper starts ({} {}) -- {}", action, keysym, e.toString());
+            return null;
+        }
     }
 
     // --- reading the frame -----------------------------------------------

@@ -67,6 +67,7 @@ public final class FlightControls {
         boolean flying = aboard != null && aboard.getControllingPassenger() == mc.player;
         if (aboard == null) {
             lastSpeed = Float.NaN;
+            RotorcraftKeys.releaseAll();
         }
         while (RotorcraftKeys.GET_OUT.consumeClick()) {
             if (aboard != null) {

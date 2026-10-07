@@ -131,6 +131,11 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 PATH="$JAVA_HOME/bin:$PATH"
 Vanilla Wheels 1.12.0 and Carried come from Maven Local (`./gradlew publishToMavenLocal` in their
 repos first). Art and test assets: `uv run --no-project python devtools/art/build.py`.
 
+The booth flies a box helicopter on real key presses, sent through XTEST by
+`devtools/booth/xkey.py` (`uv` with `python-xlib`): NeoForge reads Shift from GLFW's own key state,
+which a press handed to Minecraft does not move. The helper refuses any display with a window
+manager, so run the booth on its own X server (a Xephyr), never on a desktop.
+
 ## Licence
 
 AGPL-3.0-or-later. Copyright 2026 Rusty Shackleford and nfx.
