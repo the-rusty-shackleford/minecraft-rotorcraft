@@ -21,6 +21,7 @@ import com.chunkworks.carried.api.Carried;
 import com.chunkworks.rotorcraft.api.AircraftProfile;
 import com.chunkworks.rotorcraft.api.Rotorcraft;
 import com.chunkworks.rotorcraft.domain.Airframe;
+import com.chunkworks.rotorcraft.domain.Exit;
 import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.FlightInput;
 import com.chunkworks.rotorcraft.domain.Hull;
@@ -50,6 +51,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.vehicle.DismountHelper;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BoneMealItem;
 import net.minecraft.world.item.ItemStack;
@@ -589,6 +592,60 @@ public class Aircraft extends Vehicle {
         } else {
             rider.displayClientMessage(Component.translatable("rotorcraft.too_high"), true);
         }
+    }
+
+    /**
+     * effects: returns where {@code rider} stands on getting out: on the ground out of their own
+     * seat's door ({@link Exit}), else the other side's; failing both (water, a drop), at a door at
+     * the aircraft's own height; failing that, Vanilla Wheels' rule. The game asks while the rider
+     * is still in the seat, so where they are is where the seat is. Vanilla Wheels looks for a floor
+     * only a block under the body's top, so a Huey's pilot got out onto its roof.
+     */
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity rider) {
+        VehicleProfile p = profile();
+        AircraftProfile ap = aircraft();
+        if (p != null && ap != null) {
+            Vec3 seat = rider.position().subtract(position()).yRot(getYRot() * Mth.DEG_TO_RAD);
+            List<Exit.Spot> doors = Exit.doors(seat.x, seat.z, ap.hullBoxes(p), p.body().width() / 2.0, rider.getBbWidth() / 2.0);
+            for (Exit.Spot door : doors) {
+                Vec3 ground = groundUnder(position().add(rotate(new Vec(door.x(), 0.0, door.z()))), rider);
+                if (ground != null) {
+                    return ground;
+                }
+            }
+            for (Exit.Spot door : doors) {
+                Vec3 at = position().add(rotate(new Vec(door.x(), 0.0, door.z())));
+                if (DismountHelper.canDismountTo(level(), at, rider, Pose.STANDING)) {
+                    return at;
+                }
+            }
+        }
+        return super.getDismountLocationForPassenger(rider);
+    }
+
+    /**
+     * effects: returns the highest floor under {@code door} that {@code rider} fits on, from a block
+     * over the aircraft's own floor down to {@link #GET_OUT} and a block under it, and poses them for
+     * it; null if there is none
+     */
+    @Nullable
+    private Vec3 groundUnder(Vec3 door, LivingEntity rider) {
+        for (int y = Mth.floor(getY()) + 1; y >= Mth.floor(getY() - GET_OUT) - 1; y--) {
+            BlockPos pos = BlockPos.containing(door.x, y, door.z);
+            double floor = level().getBlockFloorHeight(pos);
+            if (!DismountHelper.isBlockFloorValid(floor)) {
+                continue;
+            }
+            Vec3 spot = new Vec3(door.x, y + floor, door.z);
+            for (Pose pose : rider.getDismountPoses()) {
+                if (DismountHelper.canDismountTo(level(), spot, rider, pose)) {
+                    rider.setPose(pose);
+                    return spot;
+                }
+            }
+        }
+        return null;
     }
 
     // --- the hook ------------------------------------------------------------------

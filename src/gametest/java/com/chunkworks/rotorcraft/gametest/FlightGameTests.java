@@ -28,6 +28,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
@@ -48,7 +49,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * aboard is hurt; out of fuel in the air it autorotates down, nobody hurt; a wall met at speed
  * wears it by the speed it carried, nobody hurt; worn to nothing in the air it comes down before
  * it is a wreck, nobody hurt; the pilot's reported moves are judged the same, once an impact;
- * Shift never drops a rider out and the get-out key works only near the ground; a low pass runs
+ * Shift never drops a rider out and the get-out key works only near the ground; getting out steps
+ * down to the ground out of the seat's own door, the other side's past a wall; a low pass runs
  * nothing over; it settles on water and nobody goes under.
  */
 @GameTestHolder(Rotorcraft.MOD_ID)
@@ -327,6 +329,65 @@ public final class FlightGameTests {
                     Rigs.logOff(rider);
                 })
                 .thenSucceed();
+    }
+
+    /** Rusty, 2026-10-07, after getting out of the Huey onto its roof: "It should put me on the ground outside of the pilot door". */
+    @GameTest(template = "airfield", timeoutTicks = 100)
+    public void gettingOutStepsDownToTheGroundOutOfTheSeatsOwnDoor(GameTestHelper helper) {
+        Rigs.floor(helper, SIZE);
+        Aircraft a = Rigs.heli(helper, 20.5, Rigs.FLOOR, 20.5, 30.0f);
+        ServerPlayer pilot = Rigs.player(helper, "pilot", GameType.SURVIVAL, new Vec3(20.5, Rigs.FLOOR, 20.5));
+        double ground = helper.absoluteVec(new Vec3(0.0, Rigs.FLOOR, 0.0)).y;
+        double clear = a.profile().body().width() / 2.0 + pilot.getBbWidth() / 2.0;
+        Vec3[] seat = new Vec3[1];
+        Vec3[] door = new Vec3[1];
+        helper.assertTrue(pilot.startRiding(a, true), "the pilot boards");
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    seat[0] = local(a, pilot.position());
+                    a.getOut(pilot);
+                    Vec3 out = local(a, pilot.position());
+                    helper.assertTrue(pilot.getVehicle() == null, "landed, out");
+                    helper.assertTrue(Math.abs(pilot.getY() - ground) < 1e-6, "on the ground, not the roof: y " + pilot.getY() + ", ground " + ground);
+                    helper.assertTrue(Math.signum(out.x) == Math.signum(seat[0].x) && Math.abs(out.x) > clear,
+                            "out of the seat's own side, clear of the body: x " + out.x + ", seat " + seat[0].x);
+                    helper.assertTrue(Math.abs(out.z - seat[0].z) < 0.05, "beside the seat: z " + out.z + ", seat " + seat[0].z);
+                    door[0] = pilot.position();
+                    // Hovering two and a half blocks up: down to the ground all the same.
+                    Vec3 low = helper.absoluteVec(new Vec3(20.5, Rigs.FLOOR + 2.5, 20.5));
+                    a.setPos(low.x, low.y, low.z);
+                    helper.assertTrue(pilot.startRiding(a, true), "aboard again, hovering");
+                })
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    a.getOut(pilot);
+                    helper.assertTrue(pilot.getVehicle() == null, "two and a half blocks up, out");
+                    helper.assertTrue(Math.abs(pilot.getY() - ground) < 1e-6, "on the ground under the door: y " + pilot.getY() + ", ground " + ground);
+                    // Landed again with a wall where the seat's door was: out of the other side.
+                    Vec3 back = helper.absoluteVec(new Vec3(20.5, Rigs.FLOOR, 20.5));
+                    a.setPos(back.x, back.y, back.z);
+                    BlockPos wall = BlockPos.containing(door[0]);
+                    for (int dy = 0; dy < 3; dy++) {
+                        helper.getLevel().setBlockAndUpdate(wall.above(dy), Blocks.STONE.defaultBlockState());
+                    }
+                    helper.assertTrue(pilot.startRiding(a, true), "aboard again, landed by the wall");
+                })
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    a.getOut(pilot);
+                    Vec3 out = local(a, pilot.position());
+                    helper.assertTrue(pilot.getVehicle() == null, "by the wall, out");
+                    helper.assertTrue(Math.signum(out.x) == -Math.signum(seat[0].x) && Math.abs(out.x) > clear && Math.abs(pilot.getY() - ground) < 1e-6,
+                            "out of the other side's door, on the ground: x " + out.x + ", y " + pilot.getY());
+                    Rigs.logOff(pilot);
+                })
+                .thenSucceed();
+    }
+
+    /** effects: returns {@code world} in {@code a}'s body frame: x across (+x the left), z along */
+    private static Vec3 local(Aircraft a, Vec3 world) {
+        return world.subtract(a.position()).yRot(a.getYRot() * Mth.DEG_TO_RAD);
     }
 
     @GameTest(template = "airfield", timeoutTicks = 300)

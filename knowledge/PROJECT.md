@@ -16,7 +16,7 @@ D-0002 (sling), D-0003 (sprayer).
 
 ## Status (2026-10-07): built, gated and filmed with both aircraft; photos passed by Rusty
 
-- Gate: 31 JUnit, 29 GameTests and the booth (13 checks) green; every new rule run against its
+- Gate: 40 JUnit, 30 GameTests and the booth (13 checks) green; every new rule run against its
   mutation and caught.
 - Found in the 4070 playtest (2026-10-07, Rusty: "left shift is not descending"): Descend on Left
   Shift never worked. NeoForge judges a key with no modifier as up while Shift, Control or Alt is
@@ -27,6 +27,13 @@ D-0002 (sling), D-0003 (sprayer).
   flies a box helicopter on real key presses (`devtools/booth/xkey.py`, XTEST on the booth's own
   display): on the old keys it failed Descend, the hook under Shift and the descent; without the
   let-go, the next boarding. Earlier gates scripted the flight input and could not see it.
+- Also from the playtest (Rusty: getting out "put me on top of the helicopter ... It should put me
+  on the ground outside of the pilot door"): Vanilla Wheels' rule aims about two blocks from the
+  centre the way the rider looks, and looks for a floor only a block under the body's top, so a
+  Huey (2.65 tall) found none and fell back to the game's default, its roof. An aircraft now puts
+  a rider on the ground out of their own seat's door (`domain/Exit`, JUnit; `Aircraft`'s ground
+  search, GameTest: landed, hovering 2.5 up, and past a wall the other side). On the old rule the
+  GameTest failed: the box helicopter's pilot came out on the wrong side.
 - Built: flight, the sling, the crop sprayer (D-0001 to D-0003); the Sling Container and the
   sprayer's icon, recipe and hiss; the hull of boxes and the rotors' reach (D-0001); a landed
   hooked load stops the hook over its eye (D-0002); the booth; the wiki page.

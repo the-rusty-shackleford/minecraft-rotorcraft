@@ -40,6 +40,9 @@ The keys are live only aboard an aircraft and can be rebound under Rotorcraft in
 - **Nobody aboard is ever hurt by flying.** No fall reaches a rider; it settles on water or lava
   and nobody goes under; it runs nothing over and breaks no glass or leaves. Riders cannot get
   out more than three blocks up ("Too high to get out").
+- **Getting out** puts a rider on the ground beside their own seat, out of that side's door, just
+  clear of the body (and of any hull box beside the seat); past a wall there, out of the other
+  side's. Over water or a drop, they step out at the door at the aircraft's own height.
 - **Crashes wear it.** Meeting a wall or a roof faster than a quarter of a block a tick, or the
   ground faster than three tenths, costs condition, growing with the square of the speed carried
   into it: about a third of a Huey at top speed into a wall, a wreck at one and a half blocks a
@@ -112,7 +115,8 @@ A slung load is likewise a Vanilla Wheels profile (no engine, no seats) and
 
 `src/domain` (JDK only, plain JUnit): `Flight` (the step, `struck`), `Airframe`, `FlightInput`,
 `Wear` (what a crash costs), `Sling` (the rope), `Swath` (the boom's columns), `Hull` (the probe
-points of the hull's boxes, and how far it and the rotors reach). `src/main`: `api`
+points of the hull's boxes, and how far it and the rotors reach), `Exit` (the doors a rider gets
+out of). `src/main`: `api`
 (`Rotorcraft`, `AircraftProfile`, `SlingProfile`), `Aircraft` and `SlungLoad` (the entities,
 extending Vanilla Wheels' `Vehicle`), `Floors` (fluid surfaces as floor), `RotorcraftContent`,
 `net/Payloads` (get out, hook, spray), `mixin/PlayerMixin`, and `client` (`FlightControls`,

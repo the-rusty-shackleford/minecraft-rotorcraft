@@ -31,7 +31,9 @@ Controls. Things to know:
 - **Crashing damages the helicopter**, though: flying into a wall or a roof fast, or hitting the
   ground faster than a soft landing. Repair it like any vehicle.
 - **Out of fuel in the air**, it glides down slowly on its spinning rotor and lands.
-- **You can only get out (R) within three blocks of the ground.** Shift never drops you out.
+- **You can only get out (R) within three blocks of the ground.** Shift never drops you out. You
+  step down to the ground beside your seat, out of your own side's door (the other side's, if a
+  wall is in the way).
 - **The rotor blades pass through trees and walls** without harm; only the body bumps into things.
 
 ## The Sling Container
