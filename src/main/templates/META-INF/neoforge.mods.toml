@@ -1,0 +1,42 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+issueTrackerURL="https://github.com/the-rusty-shackleford/minecraft-rotorcraft/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="Rusty Shackleford, nfx"
+description='''
+A rotorcraft protocol, layered on Vanilla Wheels. An aircraft is a datapack
+entry and a mesh: this mod owns the flying -- spool-up, climb, hover, descent,
+autorotation -- the rule that nobody aboard is hurt by it while a crash wears
+the aircraft, the sling hook and the slung loads, and the crop sprayer.
+Aircraft mods nest this jar inside their own; the loader keeps one copy.
+'''
+
+[[mixins]]
+config="rotorcraft.mixins.json"
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# The vehicle protocol: seats, chests, cargo, paint, keys, the lift. Nested.
+[[dependencies.${mod_id}]]
+    modId="vanillawheels"
+    type="required"
+    versionRange="[1.12.0,2.0)"
+    ordering="AFTER"
+    side="BOTH"

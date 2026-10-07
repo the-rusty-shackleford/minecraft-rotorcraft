@@ -1,0 +1,101 @@
+{
+  "mesh": "rotorcraft_gametest:box_crate",
+  "texture": "rotorcraft_gametest:textures/entity/box_heli.png",
+  "scale": 0.0625,
+  "handedness": "right",
+  "body": {
+    "width": 1.5,
+    "length": 2.5,
+    "height": 1.5,
+    "parts": []
+  },
+  "seats": [],
+  "wheels": {
+    "radius": 1,
+    "drawn": false,
+    "positions": [
+      {
+        "forward": 18,
+        "right": -10
+      },
+      {
+        "forward": 18,
+        "right": 10
+      },
+      {
+        "forward": -18,
+        "right": -10
+      },
+      {
+        "forward": -18,
+        "right": 10
+      }
+    ]
+  },
+  "climb": 0.5,
+  "mass": 1.0,
+  "cargo": {
+    "adults": 2,
+    "young": 4,
+    "slots": [
+      [
+        0,
+        4,
+        8
+      ],
+      [
+        0,
+        4,
+        -8
+      ]
+    ]
+  },
+  "doors": [
+    {
+      "part": {
+        "group": "door"
+      },
+      "hinge": [
+        -11,
+        4,
+        -20
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "open": 1.6,
+      "from": [
+        -11,
+        4,
+        -20.5
+      ],
+      "to": [
+        11,
+        22,
+        -19.5
+      ]
+    }
+  ],
+  "storage": {
+    "chests": [
+      {
+        "at": [
+          0,
+          4,
+          10
+        ],
+        "yaw": 180,
+        "scale": 0.4,
+        "rows": 3
+      }
+    ]
+  },
+  "paint": {
+    "part": {
+      "material": "body"
+    },
+    "default": "orange"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "sprayer": {
+    "subtitle": "subtitles.rotorcraft.sprayer",
+    "sounds": [
+      {
+        "name": "rotorcraft:sprayer",
+        "stream": false
+      }
+    ]
+  }
+}

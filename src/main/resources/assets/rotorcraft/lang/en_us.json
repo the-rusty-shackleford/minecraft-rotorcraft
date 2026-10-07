@@ -1,0 +1,23 @@
+{
+  "item.rotorcraft.crop_sprayer": "Crop Sprayer",
+  "vehicle.rotorcraft.sling_container": "Sling Container",
+  "key.categories.rotorcraft": "Rotorcraft",
+  "key.rotorcraft.ascend": "Climb",
+  "key.rotorcraft.descend": "Descend",
+  "key.rotorcraft.get_out": "Get out",
+  "key.rotorcraft.hook": "Hook / release the load",
+  "key.rotorcraft.spray": "Crop sprayer on / off",
+  "rotorcraft.too_high": "Too high to get out: get within three blocks of the ground",
+  "rotorcraft.hook.nothing": "Nothing under the hook",
+  "rotorcraft.hook.set_down_first": "Set the load down first",
+  "rotorcraft.sprayer.none": "No crop sprayer fitted",
+  "rotorcraft.sprayer.fitted": "Crop sprayer fitted: load it with bone meal",
+  "rotorcraft.sprayer.removed": "Crop sprayer taken off",
+  "rotorcraft.sprayer.loaded": "Bone meal: %s / %s",
+  "rotorcraft.sprayer.on": "Spraying (%s bone meal)",
+  "rotorcraft.sprayer.off": "Sprayer off",
+  "rotorcraft.sprayer.empty": "The sprayer is empty",
+  "rotorcraft.hud.sprayer": "Sprayer %s",
+  "rotorcraft.hud.spraying": "Spraying %s",
+  "subtitles.rotorcraft.sprayer": "Sprayer hisses"
+}

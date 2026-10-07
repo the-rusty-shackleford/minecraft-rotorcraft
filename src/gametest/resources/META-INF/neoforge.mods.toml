@@ -1,0 +1,17 @@
+# The gametests and the photo booth, as a mod of their own; never shipped.
+modLoader="javafml"
+loaderVersion="[1,)"
+license="AGPL-3.0-or-later"
+
+[[mods]]
+modId="rotorcraft_gametest"
+version="1.0.0"
+displayName="Rotorcraft gametests"
+description='''The gametests, the test aircraft and crate they fly, and the photo booth.'''
+
+[[dependencies.rotorcraft_gametest]]
+    modId="rotorcraft"
+    type="required"
+    versionRange="[1.0,)"
+    ordering="AFTER"
+    side="BOTH"
