@@ -18,6 +18,7 @@
 package com.chunkworks.rotorcraft.api;
 
 import com.chunkworks.rotorcraft.domain.Airframe;
+import com.chunkworks.rotorcraft.domain.Hull;
 import com.chunkworks.vanillawheels.api.VehicleProfile;
 import com.chunkworks.vanillawheels.domain.Vec;
 import com.mojang.serialization.Codec;
@@ -45,20 +46,25 @@ import java.util.Optional;
  * @param rotors               the parts that spin
  * @param hook                 the cargo hook, if it carries slung loads
  * @param sprayer              where a crop sprayer mounts, if one can
+ * @param hull                 the boxes the body is made of for its collisions in the air; none,
+ *                             the Vanilla Wheels body's nose and tail
  */
 public record AircraftProfile(double climbRate, double descentRate, double verticalAcceleration, double yawRate, int spoolTicks,
-                              double tilt, List<Rotor> rotors, Optional<Vec> hook, Optional<Sprayer> sprayer) {
+                              double tilt, List<Rotor> rotors, Optional<Vec> hook, Optional<Sprayer> sprayer, List<HullBox> hull) {
 
     /**
      * A part that spins: its faces turn about {@code axis} through {@code pivot} (mesh units), at
      * {@code speed} times the rotor's turn -- negative the other way round, a tail rotor faster.
+     * {@code radius} (mesh units) is how far its blades reach from the pivot, so the aircraft is
+     * still drawn while only a blade is in view; the blades are drawn only, and never collide.
      */
-    public record Rotor(VehicleProfile.PartSelector part, Vec pivot, Vec axis, double speed) {
+    public record Rotor(VehicleProfile.PartSelector part, Vec pivot, Vec axis, double speed, double radius) {
         public static final Codec<Rotor> CODEC = RecordCodecBuilder.create(i -> i.group(
                 VehicleProfile.PartSelector.CODEC.fieldOf("part").forGetter(Rotor::part),
                 VehicleProfile.VEC.fieldOf("pivot").forGetter(Rotor::pivot),
                 VehicleProfile.VEC.optionalFieldOf("axis", Vec.Y).forGetter(Rotor::axis),
-                Codec.doubleRange(-20.0, 20.0).optionalFieldOf("speed", 1.0).forGetter(Rotor::speed)
+                Codec.doubleRange(-20.0, 20.0).optionalFieldOf("speed", 1.0).forGetter(Rotor::speed),
+                Codec.doubleRange(0.0, 4096.0).optionalFieldOf("radius", 0.0).forGetter(Rotor::radius)
         ).apply(i, Rotor::new));
 
         public Rotor {
@@ -81,6 +87,17 @@ public record AircraftProfile(double climbRate, double descentRate, double verti
         ).apply(i, Sprayer::new));
     }
 
+    /**
+     * A box of the hull, by two opposite corners (mesh units): what meets the world in flight. A
+     * long aircraft is several (a cabin, a boom, a fin), each probed all over (domain {@code Hull}).
+     */
+    public record HullBox(Vec from, Vec to) {
+        public static final Codec<HullBox> CODEC = RecordCodecBuilder.create(i -> i.group(
+                VehicleProfile.VEC.fieldOf("from").forGetter(HullBox::from),
+                VehicleProfile.VEC.fieldOf("to").forGetter(HullBox::to)
+        ).apply(i, HullBox::new));
+    }
+
     public static final Codec<AircraftProfile> CODEC = RecordCodecBuilder.create(i -> i.group(
             Codec.doubleRange(0.01, 3.0).fieldOf("climb_rate").forGetter(AircraftProfile::climbRate),
             Codec.doubleRange(0.01, 3.0).fieldOf("descent_rate").forGetter(AircraftProfile::descentRate),
@@ -90,11 +107,33 @@ public record AircraftProfile(double climbRate, double descentRate, double verti
             Codec.doubleRange(0.0, 45.0).optionalFieldOf("tilt", 12.0).forGetter(AircraftProfile::tilt),
             Rotor.CODEC.listOf(0, 8).optionalFieldOf("rotors", List.of()).forGetter(AircraftProfile::rotors),
             VehicleProfile.VEC.optionalFieldOf("hook").forGetter(AircraftProfile::hook),
-            Sprayer.CODEC.optionalFieldOf("sprayer").forGetter(AircraftProfile::sprayer)
+            Sprayer.CODEC.optionalFieldOf("sprayer").forGetter(AircraftProfile::sprayer),
+            HullBox.CODEC.listOf(0, 16).optionalFieldOf("hull", List.of()).forGetter(AircraftProfile::hull)
     ).apply(i, AircraftProfile::new));
 
     public AircraftProfile {
         rotors = List.copyOf(rotors);
+        hull = List.copyOf(hull);
+    }
+
+    /** effects: returns the hull's boxes in blocks in {@code p}'s body frame, mirrored and scaled as its mesh is */
+    public List<Hull.Box> hullBoxes(VehicleProfile p) {
+        List<Hull.Box> out = new java.util.ArrayList<>();
+        for (HullBox b : hull) {
+            Vec a = p.localBlocks(b.from()), c = p.localBlocks(b.to());
+            out.add(Hull.Box.spanning(a.x(), a.y(), a.z(), c.x(), c.y(), c.z()));
+        }
+        return List.copyOf(out);
+    }
+
+    /** effects: returns the rotors' discs in blocks in {@code p}'s body frame */
+    public List<Hull.Disc> discs(VehicleProfile p) {
+        List<Hull.Disc> out = new java.util.ArrayList<>();
+        for (Rotor r : rotors) {
+            Vec c = p.localBlocks(r.pivot());
+            out.add(new Hull.Disc(c.x(), c.y(), c.z(), p.blocks(r.radius())));
+        }
+        return List.copyOf(out);
     }
 
     /**

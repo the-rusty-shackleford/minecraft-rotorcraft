@@ -182,6 +182,19 @@ BOX_HELI_FLIGHT = {
     "sprayer": {"part": {"group": "spray_boom"}, "at": [0, 4, -10], "width": 7},
 }
 
+# The box helicopter again, with its body shortened to three blocks and a hull of boxes: its boom
+# reaches half a block past the body's tail, its rotor four blocks out. Only the hull meets a pillar
+# under the boom, and only the rotor's reach keeps it drawn with a blade alone in view.
+BOX_BOOM = {**BOX_HELI, "body": {**BOX_HELI["body"], "length": 3.0}}
+BOX_BOOM_FLIGHT = {
+    **BOX_HELI_FLIGHT,
+    "rotors": [{**BOX_HELI_FLIGHT["rotors"][0], "radius": 64}, BOX_HELI_FLIGHT["rotors"][1]],
+    "hull": [{"from": [-12, 4, -8], "to": [12, 26, 24]},       # the cabin
+             {"from": [-3, 16, -40], "to": [3, 22, -8]},       # the boom
+             {"from": [-1, 22, -40], "to": [1, 30, -34]},      # the fin
+             {"from": [-11, 0, -10], "to": [11, 4, 20]}],      # the skids
+}
+
 BOX_CRATE = {
     "mesh": f"{TEST}:box_crate",
     "texture": f"{TEST}:textures/entity/box_heli.png",
@@ -432,9 +445,12 @@ def main(argv) -> None:
     write_png(TEST_ASSETS / "textures/entity/box_heli.png", 64, 64, atlas())
     write_json(TEST_DATA / "vanillawheels/vehicle/box_heli.json", BOX_HELI)
     write_json(TEST_DATA / "rotorcraft/aircraft/box_heli.json", BOX_HELI_FLIGHT)
+    write_json(TEST_DATA / "vanillawheels/vehicle/box_boom.json", BOX_BOOM)
+    write_json(TEST_DATA / "rotorcraft/aircraft/box_boom.json", BOX_BOOM_FLIGHT)
     write_json(TEST_DATA / "vanillawheels/vehicle/box_crate.json", BOX_CRATE)
     write_json(TEST_DATA / "rotorcraft/sling_load/box_crate.json", BOX_CRATE_SLING)
     write_json(TEST_ASSETS / "lang/en_us.json", {"vehicle.rotorcraft_gametest.box_heli": "Box Helicopter",
+                                                  "vehicle.rotorcraft_gametest.box_boom": "Box Boom",
                                                   "vehicle.rotorcraft_gametest.box_crate": "Box Crate"})
     template(ROOT / "devtools/gameteststructures/airfield.snbt", (40, 40, 40))
     template(ROOT / "devtools/gameteststructures/farm.snbt", (24, 24, 24))

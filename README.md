@@ -45,7 +45,9 @@ The keys are live only aboard an aircraft and can be rebound under Rotorcraft in
   into it: about a third of a Huey at top speed into a wall, a wreck at one and a half blocks a
   tick. Each crash shows in the server log (`Rotorcraft: <aircraft> at <pos> crashed: <n>
   condition lost`). Repair it as any vehicle: right-click or the lift.
-- **Rotor blades** are drawn only; they pass through trees and walls without harm.
+- **Rotor blades** are drawn only; they pass through trees and walls without harm. The body
+  meets the world in the air as its profile's `hull` of boxes, a cabin, a boom and a fin each
+  probed all over, so a long tail stops on what is under its middle.
 
 ## The sling
 
@@ -89,11 +91,17 @@ no wheel mesh, the lift asks no wheels); `sounds.engine` may name a loop in the 
   "yaw_rate": 3.0,                              // degrees a tick at full pedal (optional, 3)
   "spool_ticks": 60,                            // rotor spin-up (optional, 60)
   "tilt": 12,                                   // most nose-down / bank, degrees (optional, 12)
-  "rotors": [{"part": {"group": "rotor_main"}, "pivot": [0, 70, 2], "axis": [0, 1, 0], "speed": 1.0}],   // spun about the pivot; speed: share of the turn, negative the other way
+  "rotors": [{"part": {"group": "rotor_main"}, "pivot": [0, 70, 2], "axis": [0, 1, 0], "speed": 1.0,
+              "radius": 118}],                  // spun about the pivot; speed: share of the turn, negative the other way; radius: the blades' reach (optional, 0), so a blade alone in view still draws it
   "hook": [0, 2, 0],                            // the cargo hook (optional)
-  "sprayer": {"part": {"group": "spray_boom"}, "at": [0, 4, -10], "width": 11}   // a sprayer mount: the boom drawn while fitted, the nozzle line, the swath in blocks (optional)
+  "sprayer": {"part": {"group": "spray_boom"}, "at": [0, 4, -10], "width": 11},  // a sprayer mount: the boom drawn while fitted, the nozzle line, the swath in blocks (optional)
+  "hull": [{"from": [-19, 7, -42], "to": [19, 37, 57]}, ...]   // boxes (two corners) the body meets the world with in the air (optional; absent, the body's nose and tail)
 }
 ```
+
+A long body wants a `hull`: without one, the air's footprint is Vanilla Wheels' nose and tail
+points at half the body's length either way of the origin, and the origin is best under the mast,
+so the aircraft lands on its skids and turns about its rotor.
 
 A slung load is likewise a Vanilla Wheels profile (no engine, no seats) and
 `data/<ns>/rotorcraft/sling_load/<name>.json`: `{"lift": [0, 44, 0], "rope": 4.0}`, its eye
@@ -102,13 +110,14 @@ A slung load is likewise a Vanilla Wheels profile (no engine, no seats) and
 ## Layout
 
 `src/domain` (JDK only, plain JUnit): `Flight` (the step, `struck`), `Airframe`, `FlightInput`,
-`Wear` (what a crash costs), `Sling` (the rope), `Swath` (the boom's columns). `src/main`: `api`
+`Wear` (what a crash costs), `Sling` (the rope), `Swath` (the boom's columns), `Hull` (the probe
+points of the hull's boxes, and how far it and the rotors reach). `src/main`: `api`
 (`Rotorcraft`, `AircraftProfile`, `SlingProfile`), `Aircraft` and `SlungLoad` (the entities,
 extending Vanilla Wheels' `Vehicle`), `Floors` (fluid surfaces as floor), `RotorcraftContent`,
 `net/Payloads` (get out, hook, spray), `mixin/PlayerMixin`, and `client` (`FlightControls`,
 `RotorcraftKeys`, `AircraftRenderer`, `SlungLoadRenderer`, `Mist`, `SprayerIndicator`,
-`SprayerSound`). `src/gametest`: the box helicopter and box crate, 25 gametests, the booth -- a
-mod of its own, never shipped.
+`SprayerSound`). `src/gametest`: the box helicopter, the box boom (a hull of boxes) and the box
+crate, 29 gametests, the booth -- a mod of its own, never shipped.
 
 ## Building and testing
 

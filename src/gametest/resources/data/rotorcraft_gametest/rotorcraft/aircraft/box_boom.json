@@ -1,0 +1,109 @@
+{
+  "climb_rate": 0.4,
+  "descent_rate": 0.5,
+  "vertical_acceleration": 0.03,
+  "yaw_rate": 4.0,
+  "spool_ticks": 40,
+  "tilt": 10,
+  "rotors": [
+    {
+      "part": {
+        "group": "rotor_main"
+      },
+      "pivot": [
+        0,
+        30,
+        4
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "speed": 1.0,
+      "radius": 64
+    },
+    {
+      "part": {
+        "group": "rotor_tail"
+      },
+      "pivot": [
+        3.75,
+        21,
+        -38
+      ],
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "speed": 3.0
+    }
+  ],
+  "hook": [
+    0,
+    2,
+    8
+  ],
+  "sprayer": {
+    "part": {
+      "group": "spray_boom"
+    },
+    "at": [
+      0,
+      4,
+      -10
+    ],
+    "width": 7
+  },
+  "hull": [
+    {
+      "from": [
+        -12,
+        4,
+        -8
+      ],
+      "to": [
+        12,
+        26,
+        24
+      ]
+    },
+    {
+      "from": [
+        -3,
+        16,
+        -40
+      ],
+      "to": [
+        3,
+        22,
+        -8
+      ]
+    },
+    {
+      "from": [
+        -1,
+        22,
+        -40
+      ],
+      "to": [
+        1,
+        30,
+        -34
+      ]
+    },
+    {
+      "from": [
+        -11,
+        0,
+        -10
+      ],
+      "to": [
+        11,
+        4,
+        20
+      ]
+    }
+  ]
+}

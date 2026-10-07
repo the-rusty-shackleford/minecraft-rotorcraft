@@ -22,6 +22,7 @@ import com.chunkworks.rotorcraft.api.Rotorcraft;
 import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.Wear;
 import com.chunkworks.vanillawheels.Vehicle;
+import com.chunkworks.vanillawheels.domain.Vec;
 import java.util.Locale;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -36,6 +37,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -88,6 +90,45 @@ public final class FlightGameTests {
             });
             return ride;
         }
+    }
+
+    @GameTest(template = "airfield", timeoutTicks = 300)
+    public void aHullOfBoxesMeetsWhatOnlyItsBoomIsOver(GameTestHelper helper) {
+        Rigs.floor(helper, SIZE);
+        // A pillar three high under the boom's end, 1.6 to 2.6 behind the mast: past the body's own
+        // box (0.75) and its tail point (1.5), under the boom (0.5 to 2.5 back), so only the hull meets it.
+        for (int y = Rigs.FLOOR; y < Rigs.FLOOR + 3; y++) {
+            helper.setBlock(new BlockPos(20, y, 18), Blocks.STONE);
+        }
+        Aircraft a = Rigs.aircraft(helper, Rigs.BOX_BOOM, 20.5, Rigs.FLOOR + 4.5, 20.6, 0.0f);
+        Rigs.crew(helper, a);
+        a.setScriptedFlight(Rigs.fly(0, 0, -1));
+        double pillarTop = helper.absoluteVec(new Vec3(0, Rigs.FLOOR + 3, 0)).y;
+        helper.startSequence()
+                .thenIdle(160)
+                .thenExecute(() -> {
+                    // The boom's underside is a block over the feet (16 px): it rests on the pillar.
+                    double gap = a.getY() + 1.0 - pillarTop;
+                    helper.assertTrue(gap > -0.05 && gap < 0.3, "the boom came down onto the pillar and stopped there: its underside " + gap + " over the top");
+                    helper.assertTrue(!a.onGround(), "held up by its boom, short of the floor");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(template = "airfield", timeoutTicks = 40)
+    public void itIsDrawnWhileOnlyABladeOrItsBoomIsInView(GameTestHelper helper) {
+        Rigs.floor(helper, SIZE);
+        Aircraft a = Rigs.aircraft(helper, Rigs.BOX_BOOM, 20.5, Rigs.FLOOR, 20.5, 90.0f);
+        AABB cull = a.getBoundingBoxForCulling().inflate(1e-6);
+        // The main rotor turns four blocks out from its pivot, (0, 30, 4) px, whichever way it points.
+        Vec3 pivot = a.position().add(a.rotate(new Vec(0.0, 30 / 16.0, 4 / 16.0)));
+        for (int deg = 0; deg < 360; deg += 45) {
+            Vec3 tip = pivot.add(4.0 * Math.cos(Math.toRadians(deg)), 0.0, 4.0 * Math.sin(Math.toRadians(deg)));
+            helper.assertTrue(cull.contains(tip), "a blade's tip at " + deg + " degrees is inside the box it is drawn by: " + tip + " in " + cull);
+        }
+        Vec3 boomEnd = a.position().add(a.rotate(new Vec(0.0, 22 / 16.0, -40 / 16.0)));
+        helper.assertTrue(cull.contains(boomEnd), "and the boom's end: " + boomEnd + " in " + cull);
+        helper.succeed();
     }
 
     @GameTest(template = "airfield", timeoutTicks = 200)

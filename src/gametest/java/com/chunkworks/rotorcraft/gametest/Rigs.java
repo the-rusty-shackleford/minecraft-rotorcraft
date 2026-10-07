@@ -46,6 +46,8 @@ final class Rigs {
 
     static final ResourceLocation BOX_HELI = ResourceLocation.fromNamespaceAndPath(GameTestMod.MOD_ID, "box_heli");
     static final ResourceLocation BOX_CRATE = ResourceLocation.fromNamespaceAndPath(GameTestMod.MOD_ID, "box_crate");
+    /** The box helicopter with its body three blocks long and a hull of boxes, its boom reaching past the body's tail. */
+    static final ResourceLocation BOX_BOOM = ResourceLocation.fromNamespaceAndPath(GameTestMod.MOD_ID, "box_boom");
     /** The ground's top, in the test's own coordinates. */
     static final int FLOOR = 2;
 
@@ -62,8 +64,13 @@ final class Rigs {
 
     /** effects: returns a fuelled box helicopter at (x, y, z) facing {@code yaw}, in the level */
     static Aircraft heli(GameTestHelper helper, double x, double y, double z, float yaw) {
-        Vehicle v = Vehicle.create(helper.getLevel(), BOX_HELI, helper.absoluteVec(new Vec3(x, y, z)), yaw);
-        helper.assertTrue(v instanceof Aircraft, "the box helicopter is an aircraft: " + v);
+        return aircraft(helper, BOX_HELI, x, y, z, yaw);
+    }
+
+    /** effects: returns a fuelled aircraft of profile {@code id} at (x, y, z) facing {@code yaw}, in the level */
+    static Aircraft aircraft(GameTestHelper helper, ResourceLocation id, double x, double y, double z, float yaw) {
+        Vehicle v = Vehicle.create(helper.getLevel(), id, helper.absoluteVec(new Vec3(x, y, z)), yaw);
+        helper.assertTrue(v instanceof Aircraft, id + " is an aircraft: " + v);
         v.setFuel(v.tank().capacity());
         helper.getLevel().addFreshEntity(v);
         return (Aircraft) v;

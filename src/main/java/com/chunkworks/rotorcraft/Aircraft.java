@@ -23,6 +23,7 @@ import com.chunkworks.rotorcraft.api.Rotorcraft;
 import com.chunkworks.rotorcraft.domain.Airframe;
 import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.FlightInput;
+import com.chunkworks.rotorcraft.domain.Hull;
 import com.chunkworks.rotorcraft.domain.Sling;
 import com.chunkworks.rotorcraft.domain.Swath;
 import com.chunkworks.rotorcraft.domain.Wear;
@@ -56,6 +57,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
@@ -137,6 +139,10 @@ public class Aircraft extends Vehicle {
     @Nullable private VehicleProfile cachedFor;
     @Nullable private AircraftProfile cachedAircraft;
     @Nullable private Airframe cachedAirframe;
+    /** The hull's probe points (x, y, z triples, blocks in the body's frame), or null for none: the nose and tail then. */
+    @Nullable private double[] cachedHull;
+    /** {reach, top}: how far across and how high anything of the hull and the rotors reaches, blocks. */
+    private double[] cachedReach = {0.0, 0.0};
 
     public Aircraft(EntityType<? extends Vehicle> type, Level level) {
         super(type, level);
@@ -161,6 +167,9 @@ public class Aircraft extends Vehicle {
             cachedFor = p;
             cachedAircraft = p == null ? null : Rotorcraft.aircraft(level().registryAccess(), profileId()).orElse(null);
             cachedAirframe = cachedAircraft == null || p.engine().isEmpty() ? null : cachedAircraft.airframe(p);
+            List<Hull.Box> boxes = cachedAircraft == null ? List.of() : cachedAircraft.hullBoxes(p);
+            cachedHull = boxes.isEmpty() ? null : Hull.points(boxes);
+            cachedReach = cachedAircraft == null ? new double[] {0.0, 0.0} : Hull.reach(boxes, cachedAircraft.discs(p));
         }
         return cachedAircraft;
     }
@@ -404,8 +413,9 @@ public class Aircraft extends Vehicle {
     }
 
     /**
-     * effects: the footprint's walls in the air: none of the nose's or tail's points may end inside
-     * a block anywhere up the hull's height; on the ground, Vanilla Wheels' rule. Which is decided by
+     * effects: the footprint's walls in the air: none of the hull's points may end inside a block --
+     * its boxes' when it names them, else the nose's and tail's anywhere up the body's height; on the
+     * ground, Vanilla Wheels' rule. Which is decided by
      * the ground flag the move starts with, which the pilot's client and the server's re-run of its
      * move both have -- a probe only the client made would have the server refuse the pilot's moves.
      * A move that starts in a block is let through, so it can always back out.
@@ -431,29 +441,60 @@ public class Aircraft extends Vehicle {
         return delta.scale(Math.max(0.0, lo - 0.02));
     }
 
-    /** effects: returns whether any of the nose's or tail's corners or middles, the body moved by (dx, dy, dz), stands inside a block's collision bounds anywhere up the hull */
+    /**
+     * effects: returns whether any of the hull's points, the body moved by (dx, dy, dz), stands
+     * inside a block's collision bounds: the hull's boxes' points when it names boxes, else the
+     * nose's and tail's corners and middles anywhere up the body's height
+     */
     private boolean hullBlocked(VehicleProfile p, double dx, double dy, double dz) {
-        double hw = p.body().width() / 2.0, hl = p.body().length() / 2.0;
         double yaw = Math.toRadians(getYRot()), c = Math.cos(yaw), s = Math.sin(yaw);
         double x = getX() + dx, y = getY() + dy, z = getZ() + dz;
+        double[] hull = cachedHull;
+        if (hull != null) {
+            for (int i = 0; i < hull.length; i += 3) {
+                double px = hull[i], pz = hull[i + 2];
+                if (inBlock(x + px * c - pz * s, y + hull[i + 1], z + pz * c + px * s)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        double hw = p.body().width() / 2.0, hl = p.body().length() / 2.0;
         for (int point = 0; point < 6; point++) {
             double px = point % 3 == 0 ? -hw : point % 3 == 1 ? hw : 0.0;
             double pz = point < 3 ? hl : -hl;
             double wx = x + px * c - pz * s, wz = z + pz * c + px * s;
             for (double h = 0.1; h < p.body().height(); h += 0.9) {
-                double wy = y + h;
-                probe.set(Mth.floor(wx), Mth.floor(wy), Mth.floor(wz));
-                VoxelShape shape = level().getBlockState(probe).getCollisionShape(level(), probe);
-                if (!shape.isEmpty()) {
-                    double lx = wx - probe.getX(), ly = wy - probe.getY(), lz = wz - probe.getZ();
-                    if (lx >= shape.min(Direction.Axis.X) && lx <= shape.max(Direction.Axis.X) && ly >= shape.min(Direction.Axis.Y)
-                            && ly <= shape.max(Direction.Axis.Y) && lz >= shape.min(Direction.Axis.Z) && lz <= shape.max(Direction.Axis.Z)) {
-                        return true;
-                    }
+                if (inBlock(wx, y + h, wz)) {
+                    return true;
                 }
             }
         }
         return false;
+    }
+
+    /** effects: returns whether the world point (wx, wy, wz) stands inside its block's collision bounds */
+    private boolean inBlock(double wx, double wy, double wz) {
+        probe.set(Mth.floor(wx), Mth.floor(wy), Mth.floor(wz));
+        VoxelShape shape = level().getBlockState(probe).getCollisionShape(level(), probe);
+        if (shape.isEmpty()) {
+            return false;
+        }
+        double lx = wx - probe.getX(), ly = wy - probe.getY(), lz = wz - probe.getZ();
+        return lx >= shape.min(Direction.Axis.X) && lx <= shape.max(Direction.Axis.X) && ly >= shape.min(Direction.Axis.Y)
+                && ly <= shape.max(Direction.Axis.Y) && lz >= shape.min(Direction.Axis.Z) && lz <= shape.max(Direction.Axis.Z);
+    }
+
+    /** effects: returns a box round everything of it that is drawn -- hull and rotors -- whichever way it faces, so a blade alone in view still draws it */
+    @Override
+    public AABB getBoundingBoxForCulling() {
+        AABB own = super.getBoundingBoxForCulling();
+        aircraft();
+        double reach = cachedReach[0], top = cachedReach[1];
+        if (reach <= 0.0) {
+            return own;
+        }
+        return own.minmax(new AABB(getX() - reach, getY() - 1.0, getZ() - reach, getX() + reach, getY() + top + 1.0, getZ() + reach));
     }
 
     // --- the tick ------------------------------------------------------------------
