@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " N ",
+    "SCS",
+    "SSS"
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:chain"
+    },
+    "S": {
+      "tag": "c:ingots/steel"
+    },
+    "C": {
+      "item": "minecraft:chest"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "vanillawheels:vehicle",
+    "components": {
+      "vanillawheels:vehicle": "rotorcraft:sling_container"
+    }
+  }
+}

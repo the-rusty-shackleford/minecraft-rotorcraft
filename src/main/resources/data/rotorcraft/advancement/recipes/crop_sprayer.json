@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "rotorcraft:crop_sprayer"
+      }
+    },
+    "has_it": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:hopper"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_it"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "rotorcraft:crop_sprayer"
+    ]
+  }
+}

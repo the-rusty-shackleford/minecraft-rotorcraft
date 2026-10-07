@@ -1,10 +1,11 @@
-"""The art, as code: the box helicopter and the box crate the gametests and the booth fly, and
-the templates they fly in. (The sling container's model, the sprayer's icon and the sounds join
-this file as they are made.)
+"""The art, as code: the Sling Container (this protocol's standard load: its model, its profiles),
+the Crop Sprayer's icon, and the box helicopter and box crate the gametests and the booth fly,
+with the templates they fly in.
 
 Run from the repository root:
 
     uv run --no-project python devtools/art/build.py
+    uv run --no-project --with numpy python devtools/art/build.py sounds    # needs ffmpeg
 
 Everything it writes is committed; this script is the source of truth for those files. All
 original work. Copyright 2026 Rusty Shackleford and nfx. SPDX-License-Identifier: AGPL-3.0-or-later.
@@ -12,12 +13,18 @@ original work. Copyright 2026 Rusty Shackleford and nfx. SPDX-License-Identifier
 from __future__ import annotations
 
 import json
+import math
 import struct
 import sys
 import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT.parent / "tools/bbgen"))
+import bbgen  # noqa: E402  (the shared Blockbench writer: minecraft mods/tools/bbgen)
+
+MAIN_ASSETS = ROOT / "src/main/resources/assets/rotorcraft"
+MAIN_DATA = ROOT / "src/main/resources/data/rotorcraft"
 TEST = "rotorcraft_gametest"
 TEST_ASSETS = ROOT / "src/gametest/resources/assets" / TEST
 TEST_DATA = ROOT / "src/gametest/resources/data" / TEST
@@ -197,6 +204,205 @@ BOX_CRATE = {
 BOX_CRATE_SLING = {"lift": [0, 27, 0], "rope": 3.0}
 
 
+# ------------------------------------------------------------ the Sling Container
+
+# A ten-foot shipping container, life-size: 2.5 wide, 4.5 long, 2.6 tall (40 x 72 x 42 px), a steel
+# frame, ribbed side panels (the ribs are geometry, not paint), double doors at the back (-z), corner
+# castings it stands on, and a four-chain bridle from the top castings to a lift ring 22 px over the
+# roof, where the rope meets it. The panels are the paint: drawn near white, the dye colours them.
+
+W, L, H = 40, 72, 42          # outside, px
+X, Z = W / 2, L / 2
+
+
+
+def container_atlas():
+    a = bbgen.Atlas(size=128, cell=16, seed=0xC0471)
+
+    def ribbed(x, y, c):
+        return bbgen.shade(c, -14) if x % 4 == 0 else bbgen.shade(c, 6) if x % 4 == 2 else c
+
+    a.material("paint", (226, 226, 222), grain=10)
+    a.material("paint_ribs", (232, 232, 228), grain=8, pattern=ribbed)
+    a.material("frame", (74, 78, 82), grain=10)
+    a.material("casting", (52, 54, 58), grain=8)
+    a.material("floor", (122, 92, 60), grain=18, pattern=lambda x, y, c: bbgen.shade(c, -22) if y % 4 == 0 else c)
+    a.material("inside", (150, 152, 150), grain=10)
+    a.material("bar", (96, 100, 104), grain=6)
+    a.material("chain", (58, 60, 64), grain=12, pattern=lambda x, y, c: bbgen.shade(c, 30) if (x + y) % 4 == 0 else c)
+    a.material("ring", (120, 124, 128), grain=8)
+    return a
+
+
+def chain(m, name, top, low, thickness=1.2):
+    """A chain from `top` to `low` (px): one thin cube along the line, turned by y then x to point down it."""
+    dx, dy, dz = low[0] - top[0], low[1] - top[1], low[2] - top[2]
+    length = math.sqrt(dx * dx + dy * dy + dz * dz)
+    mid = [(top[i] + low[i]) / 2 for i in range(3)]
+    # A cube standing along y, turned about x then y (BbModel: x then y then z) so +y points from low to top.
+    ux, uy, uz = -dx / length, -dy / length, -dz / length
+    pitch = math.degrees(math.atan2(math.hypot(ux, uz), uy))      # about x: tilt from vertical toward -z... then yaw
+    yaw = math.degrees(math.atan2(ux, uz))
+    t = thickness / 2
+    m.cube("bridle", name, [mid[0] - t, mid[1] - length / 2, mid[2] - t], [mid[0] + t, mid[1] + length / 2, mid[2] + t],
+           "chain", rotation=(pitch, yaw, 0), origin=mid)
+
+
+def sling_container():
+    a = container_atlas()
+    m = bbgen.Model("sling_container", a, seed="rotorcraft/sling_container")
+    # The floor and the frame: bottom side rails, top side rails, corner posts, end rails.
+    m.cube("body/floor", "floor", [-X + 2, 3, -Z + 2], [X - 2, 4, Z - 2], "floor")
+    m.mirror_x("body/frame", "bottom_rail", [X - 2, 2, -Z], [X, 5, Z], "frame")
+    m.mirror_x("body/frame", "top_rail", [X - 2, H - 3, -Z], [X, H, Z], "frame")
+    for z0, z1, end in ((-Z, -Z + 3, "rear"), (Z - 3, Z, "front")):
+        m.mirror_x("body/frame", "post_" + end, [X - 3, 2, z0], [X, H, z1], "frame")
+        m.cube("body/frame", "bottom_end_" + end, [-X + 3, 2, z0], [X - 3, 5, z1], "frame")
+        m.cube("body/frame", "top_end_" + end, [-X + 3, H - 3, z0], [X - 3, H, z1], "frame")
+    # Corner castings: what it stands on, and where the bridle hangs from.
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            x0, z0 = (X - 4) * sx, (Z - 4) * sz
+            m.cube("body/castings", f"foot_{'l' if sx > 0 else 'r'}_{'f' if sz > 0 else 'b'}",
+                   [min(x0, X * sx), 0, min(z0, Z * sz)], [max(x0, X * sx), 2, max(z0, Z * sz)], "casting")
+            m.cube("body/castings", f"top_{'l' if sx > 0 else 'r'}_{'f' if sz > 0 else 'b'}",
+                   [min(x0, X * sx), H, min(z0, Z * sz)], [max(x0, X * sx), H + 1.5, max(z0, Z * sz)], "casting")
+    # The panels: sides, front end and roof are the paint; the sides and roof ribbed by geometry.
+    m.mirror_x("paint/sides", "side", [X - 1.5, 5, -Z + 3], [X - 0.5, H - 3, Z - 3], "paint",
+               faces={"west": "inside"})
+    for i in range(int((L - 6) / 4)):
+        z = -Z + 3 + 2 + i * 4
+        m.mirror_x("paint/ribs", f"rib{i:02d}", [X - 0.5, 5, z], [X, H - 3, z + 1.6], "paint_ribs")
+    m.cube("paint/front", "front", [-X + 3, 5, Z - 1.5], [X - 3, H - 3, Z - 0.5], "paint", faces={"north": "inside"})
+    for i in range(int((W - 6) / 4)):
+        x = -X + 3 + 2 + i * 4
+        m.cube("paint/front_ribs", f"rib{i:02d}", [x, 5, Z - 0.5], [x + 1.6, H - 3, Z], "paint_ribs")
+    m.cube("paint/roof", "roof", [-X + 2, H - 1.5, -Z + 3], [X - 2, H - 0.5, Z - 3], "paint", faces={"down": "inside"})
+    for i in range(int((L - 6) / 6)):
+        z = -Z + 3 + 2 + i * 6
+        m.cube("paint/roof_ribs", f"rib{i:02d}", [-X + 3, H - 0.5, z], [X - 3, H, z + 2.5], "paint_ribs")
+    # The doors: two leaves across the back, hinged at the outer posts, each with its locking bars.
+    for side, sx, folder in ((1, 1, "door_left"), (-1, -1, "door_right")):
+        x_out, x_in = (X - 3) * sx, 0.15 * sx
+        m.cube(folder + "/paint", "leaf", [min(x_out, x_in), 5, -Z + 0.5], [max(x_out, x_in), H - 3, -Z + 1.5], "paint",
+               faces={"south": "inside"})
+        for k, xb in enumerate((x_out * 0.72 + x_in * 0.28, x_out * 0.28 + x_in * 0.72)):
+            m.cube(folder, f"bar{k}", [xb - 0.6, 6, -Z], [xb + 0.6, H - 4, -Z + 0.5], "bar")
+            m.cube(folder, f"handle{k}", [xb - 0.6, 15, -Z - 1.2], [xb + 0.6, 16.5, -Z], "bar")
+    # The bridle: four chains from the top castings to the ring.
+    ring_y = H + 22
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            chain(m, f"chain_{'l' if sx > 0 else 'r'}_{'f' if sz > 0 else 'b'}", [0, ring_y - 1, 0],
+                  [(X - 2) * sx, H + 1.5, (Z - 2) * sz])
+    m.cube("bridle", "ring", [-2, ring_y - 2, -2], [2, ring_y + 2, 2], "ring")
+    m.cube("bridle", "ring_hole", [-1, ring_y - 2.2, -1], [1, ring_y + 2.2, 1], "chain")
+    return m
+
+
+CONTAINER_PROFILE = {
+    "mesh": "rotorcraft:sling_container",
+    "scale": 0.0625,
+    "handedness": "right",
+    "body": {"width": 2.5, "length": 4.5, "height": 2.65,
+             "parts": [{"at": [0, 0, 22], "width": 2.5, "height": 2.65}, {"at": [0, 0, -22], "width": 2.5, "height": 2.65}]},
+    "seats": [],
+    "wheels": {"radius": 1, "drawn": False,
+               "positions": [{"forward": 34, "right": -18}, {"forward": 34, "right": 18},
+                             {"forward": -34, "right": -18}, {"forward": -34, "right": 18}]},
+    "climb": 0.5,
+    "mass": 2.0,
+    "cargo": {"adults": 4, "young": 8, "slots": [[-9, 4, -6], [9, 4, -6], [-9, 4, -24], [9, 4, -24]]},
+    "doors": [
+        {"part": {"group": "door_left"}, "hinge": [17, 5, -35.5], "axis": [0, 1, 0], "open": -2.3,
+         "from": [0, 5, -36], "to": [17, 39, -34.5]},
+        {"part": {"group": "door_right"}, "hinge": [-17, 5, -35.5], "axis": [0, 1, 0], "open": 2.3,
+         "from": [-17, 5, -36], "to": [0, 39, -34.5]},
+    ],
+    "storage": {"chests": [{"at": [10, 4, 20], "yaw": 90, "scale": 0.8, "rows": 6},
+                           {"at": [-10, 4, 20], "yaw": 270, "scale": 0.8, "rows": 6}]},
+    "paint": {"part": {"group": "paint"}, "default": "green", "factory": "#5b6340"},
+    "repair": {"ingredient": {"tag": "c:ingots/steel"}, "full_cost": 10},
+}
+
+CONTAINER_SLING = {"lift": [0, 64, 0], "rope": 4.0}
+
+
+# ---------------------------------------------------------------- the Crop Sprayer's icon
+
+SPRAYER_PALETTE = {
+    "Y": (226, 182, 48), "y": (176, 134, 30), "W": (250, 220, 120),   # the boom: lit, shadow, highlight
+    "G": (150, 156, 164), "g": (98, 104, 112), "L": (196, 202, 210),   # the tank
+    "K": (44, 46, 50),                                                 # nozzles, outline
+    "B": (238, 236, 226), "b": (198, 198, 190),                        # the bone meal in the hopper
+}
+
+# 16 x 16: a tank with a hopper of bone meal on top, a boom across under it, four nozzles. "." is clear.
+SPRAYER_ICON = [
+    "................",
+    ".....KKKKKK.....",
+    "....KBbBBbBK....",
+    "....KbBBbBBK....",
+    ".....KGLLGK.....",
+    "....KGLGGGgK....",
+    "....KGGGGggK....",
+    "....KgGGggggK...",
+    ".....KgggggK....",
+    "KKKKKKKKKKKKKKKK",
+    "KWWWWWWWWWWWWWWK",
+    "KYYYYYYYYYYYYYYK",
+    "KyyyyyyyyyyyyyyK",
+    "KKKKKKKKKKKKKKKK",
+    ".K..K..K..K..K..",
+    "................",
+]
+
+
+def sprayer_icon():
+    px = []
+    for row in SPRAYER_ICON:
+        assert len(row) == 16, row
+        px.append([(0, 0, 0, 0) if c == "." else (*SPRAYER_PALETTE[c], 255) for c in row])
+    return px
+
+
+def sprayer_unlock(recipe: str, item: str) -> dict:
+    """The recipe-book unlock: on holding the item that starts it (Immersive Aircraft shipped none, and a
+    pooled crafting fill silently refuses a recipe the book lacks)."""
+    return {"parent": "minecraft:recipes/root",
+            "criteria": {"has_the_recipe": {"trigger": "minecraft:recipe_unlocked", "conditions": {"recipe": recipe}},
+                         "has_it": {"trigger": "minecraft:inventory_changed", "conditions": {"items": [{"items": item}]}}},
+            "requirements": [["has_the_recipe", "has_it"]],
+            "rewards": {"recipes": [recipe]}}
+
+
+CROP_SPRAYER_RECIPE = {
+    "type": "minecraft:crafting_shaped", "category": "misc",
+    "pattern": ["BHB", "D D"],
+    "key": {"B": {"item": "minecraft:iron_bars"}, "H": {"item": "minecraft:hopper"}, "D": {"item": "minecraft:dispenser"}},
+    "result": {"count": 1, "id": "rotorcraft:crop_sprayer"},
+}
+
+SLING_CONTAINER_RECIPE = {
+    "type": "minecraft:crafting_shaped", "category": "misc",
+    "pattern": [" N ", "SCS", "SSS"],
+    "key": {"N": {"item": "minecraft:chain"}, "S": {"tag": "c:ingots/steel"}, "C": {"item": "minecraft:chest"}},
+    "result": {"count": 1, "id": "vanillawheels:vehicle", "components": {"vanillawheels:vehicle": "rotorcraft:sling_container"}},
+}
+
+
+# ------------------------------------------------------------------- the sounds
+
+SOUND_SRC = ROOT / "devtools/art/sounds/src"
+
+
+def sounds() -> None:
+    """The sprayer's hiss: see devtools/art/sounds/SOURCES.md. Needs ffmpeg and numpy (`--with numpy`)."""
+    sys.path.insert(0, str(ROOT.parent / "tools/sound"))
+    import cutlib  # noqa: E402  (the shared cutter: minecraft mods/tools/sound)
+    cutlib.write_ogg(MAIN_ASSETS / "sounds/sprayer.ogg", cutlib.loop(SOUND_SRC / "852533-spraying-noise.ogg", 11.6, 14.8, 0.2, 0.7))
+
+
 def write_json(path: Path, data) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
@@ -209,6 +415,16 @@ def template(path: Path, size) -> None:
 
 
 def main(argv) -> None:
+    sling_container().write(MAIN_ASSETS / "vanillawheels/mesh/sling_container.bbmodel")
+    write_json(MAIN_DATA / "vanillawheels/vehicle/sling_container.json", CONTAINER_PROFILE)
+    write_json(MAIN_DATA / "rotorcraft/sling_load/sling_container.json", CONTAINER_SLING)
+    write_png(MAIN_ASSETS / "textures/item/crop_sprayer.png", 16, 16, sprayer_icon())
+    write_json(MAIN_ASSETS / "models/item/crop_sprayer.json", {"parent": "minecraft:item/generated",
+                                                               "textures": {"layer0": "rotorcraft:item/crop_sprayer"}})
+    write_json(MAIN_DATA / "recipe/crop_sprayer.json", CROP_SPRAYER_RECIPE)
+    write_json(MAIN_DATA / "recipe/sling_container.json", SLING_CONTAINER_RECIPE)
+    write_json(MAIN_DATA / "advancement/recipes/crop_sprayer.json", sprayer_unlock("rotorcraft:crop_sprayer", "minecraft:hopper"))
+    write_json(MAIN_DATA / "advancement/recipes/sling_container.json", sprayer_unlock("rotorcraft:sling_container", "minecraft:chain"))
     mesh = TEST_ASSETS / "vanillawheels/mesh"
     mesh.mkdir(parents=True, exist_ok=True)
     (mesh / "box_heli.obj").write_text(box_heli(), encoding="utf-8")
@@ -225,4 +441,7 @@ def main(argv) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    if sys.argv[1:] == ["sounds"]:
+        sounds()
+    else:
+        main(sys.argv)

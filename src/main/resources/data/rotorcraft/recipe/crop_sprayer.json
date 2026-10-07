@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BHB",
+    "D D"
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:iron_bars"
+    },
+    "H": {
+      "item": "minecraft:hopper"
+    },
+    "D": {
+      "item": "minecraft:dispenser"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "rotorcraft:crop_sprayer"
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "mesh": "rotorcraft:sling_container",
+  "scale": 0.0625,
+  "handedness": "right",
+  "body": {
+    "width": 2.5,
+    "length": 4.5,
+    "height": 2.65,
+    "parts": [
+      {
+        "at": [
+          0,
+          0,
+          22
+        ],
+        "width": 2.5,
+        "height": 2.65
+      },
+      {
+        "at": [
+          0,
+          0,
+          -22
+        ],
+        "width": 2.5,
+        "height": 2.65
+      }
+    ]
+  },
+  "seats": [],
+  "wheels": {
+    "radius": 1,
+    "drawn": false,
+    "positions": [
+      {
+        "forward": 34,
+        "right": -18
+      },
+      {
+        "forward": 34,
+        "right": 18
+      },
+      {
+        "forward": -34,
+        "right": -18
+      },
+      {
+        "forward": -34,
+        "right": 18
+      }
+    ]
+  },
+  "climb": 0.5,
+  "mass": 2.0,
+  "cargo": {
+    "adults": 4,
+    "young": 8,
+    "slots": [
+      [
+        -9,
+        4,
+        -6
+      ],
+      [
+        9,
+        4,
+        -6
+      ],
+      [
+        -9,
+        4,
+        -24
+      ],
+      [
+        9,
+        4,
+        -24
+      ]
+    ]
+  },
+  "doors": [
+    {
+      "part": {
+        "group": "door_left"
+      },
+      "hinge": [
+        17,
+        5,
+        -35.5
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "open": -2.3,
+      "from": [
+        0,
+        5,
+        -36
+      ],
+      "to": [
+        17,
+        39,
+        -34.5
+      ]
+    },
+    {
+      "part": {
+        "group": "door_right"
+      },
+      "hinge": [
+        -17,
+        5,
+        -35.5
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "open": 2.3,
+      "from": [
+        -17,
+        5,
+        -36
+      ],
+      "to": [
+        0,
+        39,
+        -34.5
+      ]
+    }
+  ],
+  "storage": {
+    "chests": [
+      {
+        "at": [
+          10,
+          4,
+          20
+        ],
+        "yaw": 90,
+        "scale": 0.8,
+        "rows": 6
+      },
+      {
+        "at": [
+          -10,
+          4,
+          20
+        ],
+        "yaw": 270,
+        "scale": 0.8,
+        "rows": 6
+      }
+    ]
+  },
+  "paint": {
+    "part": {
+      "group": "paint"
+    },
+    "default": "green",
+    "factory": "#5b6340"
+  },
+  "repair": {
+    "ingredient": {
+      "tag": "c:ingots/steel"
+    },
+    "full_cost": 10
+  }
+}
