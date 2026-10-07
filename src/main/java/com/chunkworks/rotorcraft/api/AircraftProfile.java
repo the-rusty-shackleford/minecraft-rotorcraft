@@ -18,8 +18,8 @@
 package com.chunkworks.rotorcraft.api;
 
 import com.chunkworks.rotorcraft.domain.Airframe;
-import com.chunkworks.rotorcraft.domain.Hull;
 import com.chunkworks.vanillawheels.api.VehicleProfile;
+import com.chunkworks.vanillawheels.domain.Hull;
 import com.chunkworks.vanillawheels.domain.Vec;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;

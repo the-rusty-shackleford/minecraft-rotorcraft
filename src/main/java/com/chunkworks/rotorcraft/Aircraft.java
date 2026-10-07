@@ -24,13 +24,13 @@ import com.chunkworks.rotorcraft.domain.Airframe;
 import com.chunkworks.rotorcraft.domain.Exit;
 import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.FlightInput;
-import com.chunkworks.rotorcraft.domain.Hull;
 import com.chunkworks.rotorcraft.domain.Sling;
 import com.chunkworks.rotorcraft.domain.Strike;
 import com.chunkworks.rotorcraft.domain.Swath;
-import com.chunkworks.rotorcraft.domain.Wear;
 import com.chunkworks.vanillawheels.Vehicle;
 import com.chunkworks.vanillawheels.api.VehicleProfile;
+import com.chunkworks.vanillawheels.domain.Crash;
+import com.chunkworks.vanillawheels.domain.Hull;
 import com.chunkworks.vanillawheels.domain.Suspension;
 import com.chunkworks.vanillawheels.domain.Vec;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -68,7 +67,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -81,10 +79,11 @@ import org.jetbrains.annotations.Nullable;
  * <p>Nobody aboard is ever hurt by the flying: no fall reaches a rider, and the descent is capped
  * so that the floor is never met hard while the rotor turns or autorotates. A crash wears the
  * aircraft instead: the server reads what the world refused of each move -- its own, or the moves
- * the pilot's client reports -- and charges {@link Wear}. Worn to nothing in the air, it comes down
- * autorotating, its engine dead, and is a wreck only once it stands on something. Riders get out
- * with the get-out key within {@link #GET_OUT} of the floor, never higher; Shift is the collective
- * here, never a way out (see the mixin).
+ * the pilot's client reports -- and charges {@link Flight#CRASH}, judged by Vanilla Wheels (its
+ * D-0031). Worn to nothing in the air, it comes down autorotating, its engine dead, and is a wreck
+ * only once it stands on something. Riders get out with the get-out key within {@link #GET_OUT} of
+ * the floor, never higher; Shift is the collective here, never a way out (Vanilla Wheels' vertical
+ * controls).
  *
  * <p>It carries slung loads on its hook (see {@link SlungLoad}) and, where its profile has a mount,
  * a crop sprayer that doses the crops under its boom with the bone meal in its tank.
@@ -116,8 +115,6 @@ public class Aircraft extends Vehicle {
     static final int PROBE = 32;
     /** The rotor's turn a tick at full speed, radians, for drawing: a rotor's {@code speed} multiplies it. */
     public static final double SPIN = 0.9;
-    /** A move longer than this, blocks, is a correction or a teleport, not flight: crash wear ignores it. */
-    static final double NOT_FLIGHT = 6.0;
 
     private Flight flight = Flight.landed(0.0);
     @Nullable private FlightInput scripted;
@@ -125,12 +122,14 @@ public class Aircraft extends Vehicle {
     private double serverSpool;
     /** The floor's distance under it as the last step probed it. */
     private double clearance = PROBE;
-    /** The last move the pilot's client reported, for the server's crash judgement; null when there is none to compare. */
-    @Nullable private Vec3 lastReported;
-    /** Whether the last reported move was charged as a crash: the rest of the same impact, a tick later, is not charged again. */
-    private boolean impacting;
     /** Set while a /kill takes it: no waiting to come down. */
     private boolean killed;
+    /**
+     * Set while a wreck made in the air comes down, to be packed once it stands (D-0004). A broken
+     * aircraft set down from its packed item is not one: it stays where it is put, unflyable, until
+     * it is repaired.
+     */
+    private boolean wreckComingDown;
     /** The rotor's accumulated turn on the client, radians, this tick and the last. */
     private double rotorAngle, rotorAngleO;
 
@@ -292,7 +291,7 @@ public class Aircraft extends Vehicle {
             // keeps the rest, so it slides along a wall and does not drive into it again.
             flight = flight.struck(want.x, want.y, want.z, got.x, got.y, got.z);
             if (!level().isClientSide()) {
-                crashed(Wear.impact(want.x, want.y, want.z, got.x, got.y, got.z));
+                crashed(Flight.CRASH.impact(want.x, want.y, want.z, got.x, got.y, got.z));
             }
         }
         setDeltaMovement(new Vec3(flight.vx(), flight.vy(), flight.vz()));
@@ -346,61 +345,33 @@ public class Aircraft extends Vehicle {
         return aircraft() == null ? super.columns() : Floors.withFluids(super.columns(), level(), getY());
     }
 
-    /**
-     * effects: moves as a vehicle does; a move the pilot's client reported is judged on the server:
-     * what it lost against a block or the ground, beyond what the flight could shed in a tick, wears
-     * it. (Water needs no stop here: the flight reads a fluid's surface as its floor, so it settles
-     * there by itself -- the gametest on a pond showed it, with a stop here removed.)
-     */
+    /** effects: returns an aircraft's crash cost while it has an airframe to fly by; nothing else is judged (Vanilla Wheels' D-0031) */
+    @Nullable
     @Override
-    public void move(MoverType type, Vec3 delta) {
-        super.move(type, delta);
-        if (type == MoverType.PLAYER && !level().isClientSide() && aircraft() != null) {
-            judge(delta);
-        }
+    protected Crash crashes() {
+        return airframe() == null ? null : Flight.CRASH;
     }
 
-    /**
-     * effects: on the server, judges the move the pilot's client reported, {@code now}, against the
-     * one before it: when it lost more of its speed than the flight itself can shed in a tick, the
-     * world stopped it, and it is charged for the speed it carried into what stopped it
-     * ({@link Wear#impact}) -- once an impact: an impact met early in a tick is finished the next,
-     * and that is not charged again (see {@link #move})
-     */
-    private void judge(Vec3 now) {
+    /** effects: returns what the flight itself can change in a tick: its acceleration or brake and its turn across, its climb or sink, and a hair */
+    @Override
+    protected double ownChange() {
         Airframe a = airframe();
-        Vec3 before = lastReported;
-        lastReported = now;
-        if (before == null || a == null || before.length() > NOT_FLIGHT || now.length() > NOT_FLIGHT) {
-            impacting = false;
-            return;
-        }
-        // What the flight itself can change in a tick: its acceleration or brake and its turn across, its climb or sink, and a hair.
-        double shed = Math.max(a.acceleration(), a.brake()) + a.maxSpeed() * a.yawRate() + a.verticalAcceleration() + 0.02;
-        boolean hit = Wear.lost(before.x, before.y, before.z, now.x, now.y, now.z, shed) > 0.0;
-        if (hit && !impacting) {
-            crashed(Wear.impact(before.x, before.y, before.z, now.x, now.y, now.z));
-        }
-        impacting = hit;
+        return a == null ? super.ownChange() : Math.max(a.acceleration(), a.brake()) + a.maxSpeed() * a.yawRate() + a.verticalAcceleration() + 0.02;
     }
 
-    /**
-     * effects: on the server, wears it by {@code wear} condition points, what {@link Wear#impact}
-     * charged a collision: exactly (a hurt's amount is rounded up and would add a point), heard as a
-     * crash, shown as the wrench row's blink, written to the log; a wreck comes down before it is
-     * one ({@link #destroy}). Nothing for a bump or a landing (no wear).
-     */
-    void crashed(int wear) {
+    /** effects: wears it as Vanilla Wheels does, heard as a crash (a load on the hook is worn without it) */
+    @Override
+    protected void crashed(int wear) {
         if (wear > 0 && !isRemoved()) {
-            LOG.info("Rotorcraft: {} at {} crashed: {} condition lost", getName().getString(), blockPosition().toShortString(), wear);
             level().playSound(null, getX(), getY(), getZ(), SoundEvents.ANVIL_LAND, SoundSource.NEUTRAL, 0.6f, 0.6f);
-            setCondition(condition() - wear);
-            markHurt();
-            gameEvent(net.minecraft.world.level.gameevent.GameEvent.ENTITY_DAMAGE);
-            if (condition() == 0) {
-                destroy(damageSources().flyIntoWall());
-            }
         }
+        super.crashed(wear);
+    }
+
+    /** effects: true: Space climbs, Left Shift descends, R gets out, and Shift never lets a rider off (Vanilla Wheels' D-0031) */
+    @Override
+    public boolean verticalControls() {
+        return true;
     }
 
     // --- the air's rules --------------------------------------------------------
@@ -416,8 +387,10 @@ public class Aircraft extends Vehicle {
     protected void destroy(DamageSource source) {
         VehicleProfile p = profile();
         if (aircraft() != null && p != null && !killed && !standing(clearance(p))) {
+            wreckComingDown = true;
             return;
         }
+        wreckComingDown = false;
         super.destroy(source);
     }
 
@@ -461,32 +434,26 @@ public class Aircraft extends Vehicle {
 
     /**
      * effects: the footprint's walls in the air: none of the hull's points may end inside a block --
-     * its boxes' when it names them, else the nose's and tail's anywhere up the body's height; on the
-     * ground, Vanilla Wheels' rule. Which is decided by
+     * its boxes' when it names them, else the nose's and tail's anywhere up the body's height
+     * (Vanilla Wheels' {@code hullClamp}, its D-0031); on the ground, Vanilla Wheels' car rule. Which is decided by
      * the ground flag the move starts with, which the pilot's client and the server's re-run of its
      * move both have -- a probe only the client made would have the server refuse the pilot's moves.
      * A move that starts in a block is let through, so it can always back out.
      */
     @Override
     protected Vec3 footprintClamp(Vec3 delta) {
-        VehicleProfile p = profile();
-        if (aircraft() == null || p == null || onGround()) {
+        if (aircraft() == null || profile() == null || onGround()) {
             return super.footprintClamp(delta);
         }
-        delta = overTheLoad(delta);
-        if (hullBlocked(p, 0.0, 0.0, 0.0) || !hullBlocked(p, delta.x, delta.y, delta.z)) {
-            return delta;
-        }
-        double lo = 0.0, hi = 1.0;
-        for (int i = 0; i < 7; i++) {
-            double mid = (lo + hi) / 2.0;
-            if (hullBlocked(p, delta.x * mid, delta.y * mid, delta.z * mid)) {
-                hi = mid;
-            } else {
-                lo = mid;
-            }
-        }
-        return delta.scale(Math.max(0.0, lo - 0.02));
+        return hullClamp(overTheLoad(delta));
+    }
+
+    /** effects: returns the hull's probe points from the aircraft profile, or null for none: the nose and tail then */
+    @Nullable
+    @Override
+    protected double[] hullPoints() {
+        aircraft();
+        return cachedHull;
     }
 
     /**
@@ -507,50 +474,6 @@ public class Aircraft extends Vehicle {
     private double overLoad(SlungLoad load) {
         Vec3 hook = hookPoint(), eye = load.eyePoint();
         return hook == null || eye == null ? Double.MAX_VALUE : Math.max(0.0, hook.y - eye.y - HOOK_CLEAR);
-    }
-
-    /**
-     * effects: returns whether any of the hull's points, the body moved by (dx, dy, dz), stands
-     * inside a block's collision bounds: the hull's boxes' points when it names boxes, else the
-     * nose's and tail's corners and middles anywhere up the body's height
-     */
-    private boolean hullBlocked(VehicleProfile p, double dx, double dy, double dz) {
-        double yaw = Math.toRadians(getYRot()), c = Math.cos(yaw), s = Math.sin(yaw);
-        double x = getX() + dx, y = getY() + dy, z = getZ() + dz;
-        double[] hull = cachedHull;
-        if (hull != null) {
-            for (int i = 0; i < hull.length; i += 3) {
-                double px = hull[i], pz = hull[i + 2];
-                if (inBlock(x + px * c - pz * s, y + hull[i + 1], z + pz * c + px * s)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        double hw = p.body().width() / 2.0, hl = p.body().length() / 2.0;
-        for (int point = 0; point < 6; point++) {
-            double px = point % 3 == 0 ? -hw : point % 3 == 1 ? hw : 0.0;
-            double pz = point < 3 ? hl : -hl;
-            double wx = x + px * c - pz * s, wz = z + pz * c + px * s;
-            for (double h = 0.1; h < p.body().height(); h += 0.9) {
-                if (inBlock(wx, y + h, wz)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /** effects: returns whether the world point (wx, wy, wz) stands inside its block's collision bounds */
-    private boolean inBlock(double wx, double wy, double wz) {
-        probe.set(Mth.floor(wx), Mth.floor(wy), Mth.floor(wz));
-        VoxelShape shape = level().getBlockState(probe).getCollisionShape(level(), probe);
-        if (shape.isEmpty()) {
-            return false;
-        }
-        double lx = wx - probe.getX(), ly = wy - probe.getY(), lz = wz - probe.getZ();
-        return lx >= shape.min(Direction.Axis.X) && lx <= shape.max(Direction.Axis.X) && ly >= shape.min(Direction.Axis.Y)
-                && ly <= shape.max(Direction.Axis.Y) && lz >= shape.min(Direction.Axis.Z) && lz <= shape.max(Direction.Axis.Z);
     }
 
     /** effects: returns a box round everything of it that is drawn -- hull and rotors -- whichever way it faces, so a blade alone in view still draws it */
@@ -636,14 +559,16 @@ public class Aircraft extends Vehicle {
             serverSpool = engineCanRun() ? Math.min(1.0, serverSpool + 1.0 / a.spoolTicks()) : Math.max(0.0, serverSpool - 0.5 / a.spoolTicks());
         }
         entityData.set(DATA_ROTOR, (float) serverSpool);
-        if (!(getControllingPassenger() instanceof Player)) {
-            lastReported = null;
-        }
         strike();
-        // A wreck that came down is a wreck now.
-        if (condition() == 0 && !isRemoved() && standing(clearance(p))) {
+        // A wreck made in the air is packed once it has come down. One set down broken from its item
+        // stays to be repaired: packing it again as it stood was why a broken Huey could not be mended.
+        if (wreckComingDown && condition() == 0 && !isRemoved() && standing(clearance(p))) {
+            wreckComingDown = false;
             super.destroy(damageSources().generic());
             return;
+        }
+        if (condition() > 0) {
+            wreckComingDown = false;
         }
         if (spraying()) {
             spray(p);
@@ -665,6 +590,7 @@ public class Aircraft extends Vehicle {
     // --- getting out -------------------------------------------------------------
 
     /** effects: on the server, lets {@code rider} out if it stands on something or hovers within {@link #GET_OUT} of the floor; otherwise tells them it is too high */
+    @Override
     public void getOut(Player rider) {
         VehicleProfile p = profile();
         if (rider.getVehicle() != this || p == null) {
@@ -987,6 +913,7 @@ public class Aircraft extends Vehicle {
         super.addAdditionalSaveData(tag);
         tag.putBoolean("Sprayer", sprayerFitted());
         tag.putInt("BoneMeal", bonemeal());
+        tag.putBoolean("WreckComingDown", wreckComingDown);
     }
 
     @Override
@@ -994,6 +921,7 @@ public class Aircraft extends Vehicle {
         super.readAdditionalSaveData(tag);
         entityData.set(DATA_SPRAYER, tag.getBoolean("Sprayer"));
         entityData.set(DATA_BONEMEAL, Mth.clamp(tag.getInt("BoneMeal"), 0, TANK));
+        wreckComingDown = tag.getBoolean("WreckComingDown");
         flight = Flight.landed(Math.toRadians(getYRot()));
     }
 

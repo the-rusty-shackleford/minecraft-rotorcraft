@@ -17,8 +17,9 @@
  */
 /**
  * The pure layer: how a rotorcraft moves under its pilot ({@link Flight}, {@link Airframe},
- * {@link FlightInput}), what a crash costs it ({@link Wear}), how a slung load swings on its rope
- * ({@link Sling}), which columns a spray boom sweeps ({@link Swath}). Compiled against the JDK
- * alone, so a Minecraft import here is a compile error.
+ * {@link FlightInput}), what a crash costs it ({@link Flight#CRASH}, Vanilla Wheels' pure
+ * {@code Crash}), how a slung load swings on its rope ({@link Sling}), which columns a spray boom
+ * sweeps ({@link Swath}). Compiled against the JDK and Vanilla Wheels' pure layer alone, so a
+ * Minecraft import here is a compile error.
  */
 package com.chunkworks.rotorcraft.domain;

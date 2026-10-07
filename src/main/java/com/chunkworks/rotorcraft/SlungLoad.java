@@ -19,8 +19,8 @@ package com.chunkworks.rotorcraft;
 
 import com.chunkworks.rotorcraft.api.Rotorcraft;
 import com.chunkworks.rotorcraft.api.SlingProfile;
+import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.Sling;
-import com.chunkworks.rotorcraft.domain.Wear;
 import com.chunkworks.vanillawheels.Vehicle;
 import com.chunkworks.vanillawheels.api.VehicleProfile;
 import com.chunkworks.vanillawheels.domain.Suspension;
@@ -48,7 +48,6 @@ import org.jetbrains.annotations.Nullable;
  * tick order, the lights, recall.
  */
 public class SlungLoad extends Vehicle {
-    private static final org.slf4j.Logger LOG = com.mojang.logging.LogUtils.getLogger();
     /** The eye on its rope as this side last stepped it; null until hooked and stepped. */
     @Nullable private Sling sling;
     @Nullable private VehicleProfile cachedFor;
@@ -153,24 +152,11 @@ public class SlungLoad extends Vehicle {
         setYRot(Mth.rotLerp(0.08f, getYRot(), tower.getYRot()));
         showSpeed((float) Math.hypot(got.x, got.z));
         if (!level().isClientSide()) {
-            crashed(Wear.impact(from.vx(), from.vy(), from.vz(), want.x, want.y, want.z, got.x, got.y, got.z));
+            crashed(Flight.CRASH.impact(from.vx(), from.vy(), from.vz(), want.x, want.y, want.z, got.x, got.y, got.z));
             Vec3 now = eyePoint();
             if (now != null && tower.trailer() == this && Sling.snagged(now.distanceTo(hook), sp.rope())) {
                 unhitch();
                 level().playSound(null, now.x, now.y, now.z, SoundEvents.CHAIN_BREAK, SoundSource.NEUTRAL, 1.0f, 0.6f);
-            }
-        }
-    }
-
-    /** effects: on the server, wears the load by {@code wear} condition points, what {@link Wear} charged a collision or a fall */
-    void crashed(int wear) {
-        if (wear > 0 && !isRemoved()) {
-            LOG.info("Rotorcraft: {} at {} crashed: {} condition lost", getName().getString(), blockPosition().toShortString(), wear);
-            setCondition(condition() - wear);
-            markHurt();
-            gameEvent(net.minecraft.world.level.gameevent.GameEvent.ENTITY_DAMAGE);
-            if (condition() == 0) {
-                destroy(damageSources().flyIntoWall());
             }
         }
     }
@@ -201,7 +187,7 @@ public class SlungLoad extends Vehicle {
             return super.causeFallDamage(fallDistance, multiplier, source);
         }
         if (!level().isClientSide() && Float.isFinite(fallDistance) && fallDistance > 0) {
-            crashed(Wear.touchdown(Math.sqrt(2.0 * Sling.GRAVITY * fallDistance)));
+            crashed(Flight.CRASH.touchdown(Math.sqrt(2.0 * Sling.GRAVITY * fallDistance)));
         }
         return false;
     }

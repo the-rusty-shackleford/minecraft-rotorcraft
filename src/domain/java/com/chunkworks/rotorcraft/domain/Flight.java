@@ -17,6 +17,8 @@
  */
 package com.chunkworks.rotorcraft.domain;
 
+import com.chunkworks.vanillawheels.domain.Crash;
+
 /**
  * How a rotorcraft moves: its state one tick to the next under a pilot's {@link FlightInput} and an
  * {@link Airframe}. An arcade helicopter: the rotor spools up before it will climb; the collective
@@ -49,6 +51,13 @@ public record Flight(double vx, double vy, double vz, double heading, double yaw
     public static final double AUTOROTATION = 0.25;
     /** The share of its top speed it glides at, unpowered. */
     public static final double GLIDE = 0.6;
+    /**
+     * What a crash costs an aircraft or the load on its hook (Vanilla Wheels' {@link Crash}, its
+     * D-0031; here as {@code Wear} until 1.1.0): a wall or a roof met faster than 0.25 blocks a tick,
+     * the floor met sinking faster than 0.3 -- over {@link #TOUCHDOWN}, with room for the step's lag
+     * -- and a wreck at 1.5.
+     */
+    public static final Crash CRASH = new Crash(0.25, 0.3, 1.5);
     /** The share of the airframe's yaw rate the turn gains or sheds a tick. */
     public static final double YAW_EASE = 0.2;
     /** The share of the way to its target tilt the body moves a tick. */

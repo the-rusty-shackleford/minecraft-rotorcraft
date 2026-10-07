@@ -28,9 +28,10 @@ repositories {
 //     ^
 //     +----  test (plain JUnit; no Minecraft on its classpath at all)
 //
-// `domain` is the pure layer: how a rotorcraft moves under its pilot, what a
-// crash costs it, how a load swings on its rope, which columns a spray boom
-// sweeps -- over plain numbers, compiled against nothing but the JDK.
+// `domain` is the pure layer: how a rotorcraft moves under its pilot, how a
+// load swings on its rope, which columns a spray boom sweeps -- over plain
+// numbers, compiled against the JDK and Vanilla Wheels' own pure layer (its
+// hull and what a crash costs, D-0031 there).
 sourceSets {
     domain
     gametest
@@ -129,8 +130,8 @@ dependencies {
     // nests (Luminance, Carried); Metals and Materials comes through it.
     jarJar(implementation("com.chunkworks.vanillawheels:vanillawheels")) {
         version {
-            strictly "[1.12,2.0)"
-            prefer "1.12.0"
+            strictly "[1.13,2.0)"
+            prefer "1.13.0"
         }
     }
     // Carried: the crop sprayer and its bone meal go back where a give goes, bags included.
@@ -142,6 +143,10 @@ dependencies {
     }
 
     implementation sourceSets.domain.output
+    // The pure layer builds on Vanilla Wheels' own (its D-0031: Hull, Crash), which needs nothing but
+    // the JDK: its jar alone, none of what it depends on, so no Minecraft reaches the plain tests.
+    domainImplementation("com.chunkworks.vanillawheels:vanillawheels:1.13.0") { transitive = false }
+    testImplementation("com.chunkworks.vanillawheels:vanillawheels:1.13.0") { transitive = false }
 
     gametestImplementation sourceSets.main.output
     gametestImplementation sourceSets.domain.output

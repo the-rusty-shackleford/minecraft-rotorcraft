@@ -23,6 +23,7 @@ import com.chunkworks.rotorcraft.SlungLoad;
 import com.chunkworks.rotorcraft.client.RotorcraftKeys;
 import com.chunkworks.rotorcraft.domain.FlightInput;
 import com.chunkworks.vanillawheels.Vehicle;
+import com.chunkworks.vanillawheels.client.Keys;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
 import java.io.IOException;
@@ -330,7 +331,7 @@ public final class RotorcraftBooth {
                     ? null : "helper " + (shiftDown == null ? "not started" : shiftDown.isAlive() ? "still running" : "exit " + shiftDown.exitValue()));
             verdict("a real Left Shift reaches the game window", () -> InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)
                     ? null : "GLFW reads Left Shift up");
-            verdict("Descend is down while Left Shift is held", () -> RotorcraftKeys.DESCEND.isDown() ? null : "Descend reads up");
+            verdict("Descend is down while Left Shift is held", () -> Keys.DOWN.isDown() ? null : "Descend reads up");
             xkey("down", "g");
         }));
         s.add(new Step(t += 40, () -> {
@@ -350,8 +351,8 @@ public final class RotorcraftBooth {
         })));
         s.add(new Step(t += 20, () -> {
             verdict("aboard again, a Left Shift let go off the aircraft is not still down", () -> client(mc, flown) instanceof Aircraft a
-                    && a.getControllingPassenger() == mc.player && !RotorcraftKeys.DESCEND.isDown()
-                    ? null : "aboard " + (mc.player == null ? null : mc.player.getVehicle()) + ", Descend down " + RotorcraftKeys.DESCEND.isDown());
+                    && a.getControllingPassenger() == mc.player && !Keys.DOWN.isDown()
+                    ? null : "aboard " + (mc.player == null ? null : mc.player.getVehicle()) + ", Descend down " + Keys.DOWN.isDown());
             onServer(mc, ServerPlayer::stopRiding);
         }));
         return t;

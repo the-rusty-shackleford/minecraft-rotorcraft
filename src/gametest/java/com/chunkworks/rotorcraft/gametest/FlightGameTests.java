@@ -20,8 +20,8 @@ package com.chunkworks.rotorcraft.gametest;
 import com.chunkworks.rotorcraft.Aircraft;
 import com.chunkworks.rotorcraft.api.Rotorcraft;
 import com.chunkworks.rotorcraft.domain.Flight;
-import com.chunkworks.rotorcraft.domain.Wear;
 import com.chunkworks.vanillawheels.Vehicle;
+import com.chunkworks.vanillawheels.domain.Condition;
 import com.chunkworks.vanillawheels.domain.Vec;
 import java.util.Locale;
 import net.minecraft.core.BlockPos;
@@ -184,7 +184,7 @@ public final class FlightGameTests {
                 .thenExecute(() -> {
                     helper.assertTrue(ride.fastestSink > 0.4, "it came down at speed first: " + ride.fastestSink + ride.trace);
                     helper.assertTrue(ride.touchdownSink <= 0.2, "and met the floor softly: " + ride.touchdownSink + ride.trace);
-                    helper.assertValueEqual(a.condition(), Wear.FULL_CONDITION, "a landing, not a crash:" + ride.trace);
+                    helper.assertValueEqual(a.condition(), Condition.MAX, "a landing, not a crash:" + ride.trace);
                     helper.assertValueEqual(ride.lowest, health, "nobody aboard was hurt:" + ride.trace);
                 })
                 .thenSucceed();
@@ -212,7 +212,7 @@ public final class FlightGameTests {
                 .thenExecute(() -> {
                     helper.assertTrue(top[0] > 10.0, "it was high when the engine stopped: " + top[0]);
                     helper.assertTrue(Math.abs(ride.fastestSink - Flight.AUTOROTATION) < 0.01, "it came down autorotating: " + ride.fastestSink + ride.trace);
-                    helper.assertValueEqual(a.condition(), Wear.FULL_CONDITION, "and landed, not crashed:" + ride.trace);
+                    helper.assertValueEqual(a.condition(), Condition.MAX, "and landed, not crashed:" + ride.trace);
                     helper.assertValueEqual(ride.lowest, health, "nobody aboard was hurt:" + ride.trace);
                 })
                 .thenSucceed();
@@ -234,7 +234,7 @@ public final class FlightGameTests {
         double wall = helper.absoluteVec(new Vec3(37, 0, 0)).x;
         double[] speed = new double[1];
         helper.onEachTick(() -> {
-            if (a.condition() == Wear.FULL_CONDITION) {
+            if (a.condition() == Condition.MAX) {
                 speed[0] = a.flight().speed();
             }
         });
@@ -242,14 +242,50 @@ public final class FlightGameTests {
         helper.startSequence()
                 .thenWaitUntil(() -> helper.assertTrue(a.getY() > y0 + 3.0, "up off the ground"))
                 .thenExecute(() -> a.setScriptedFlight(Rigs.fly(1, 0, 0)))
-                .thenWaitUntil(() -> helper.assertTrue(a.condition() < Wear.FULL_CONDITION, "into the wall:" + ride.trace))
+                .thenWaitUntil(() -> helper.assertTrue(a.condition() < Condition.MAX, "into the wall:" + ride.trace))
                 .thenIdle(10)
                 .thenExecute(() -> {
                     a.setScriptedFlight(null);
                     helper.assertTrue(Math.abs(speed[0] - 1.0) < 1e-9, "it was at its top speed when it met the wall: " + speed[0]);
-                    helper.assertValueEqual(a.condition(), Wear.FULL_CONDITION - Wear.crash(1.0), "worn by a crash at its top speed, once:" + ride.trace);
+                    helper.assertValueEqual(a.condition(), Condition.MAX - Flight.CRASH.crash(1.0), "worn by a crash at its top speed, once:" + ride.trace);
                     helper.assertTrue(a.getX() < wall, "and stopped at the wall: " + (a.getX() - wall));
                     helper.assertValueEqual(ride.lowest, health, "nobody aboard was hurt");
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * A broken aircraft set down from its packed item stays where it is put (D-0004), unflyable until
+     * it is repaired, and the click that would seat a player repairs it a step. Before, the wreck's own
+     * rule packed it up again as it stood, and a broken Huey could never be mended.
+     */
+    @GameTest(template = "airfield", timeoutTicks = 200)
+    public void aBrokenAircraftSetDownFromItsItemStaysUnflyableUntilItIsRepaired(GameTestHelper helper) {
+        Rigs.floor(helper, SIZE);
+        net.minecraft.world.item.ItemStack broken = com.chunkworks.vanillawheels.ModContent.vehicleStack(Rigs.BOX_HELI);
+        broken.set(com.chunkworks.vanillawheels.ModContent.CONDITION.get(), 0);
+        ServerPlayer sp = Rigs.player(helper, "mechanic", GameType.SURVIVAL, new Vec3(14.5, Rigs.FLOOR, 20.5));
+        Aircraft[] a = new Aircraft[1];
+        double[] y0 = new double[1];
+        helper.startSequence()
+                .thenExecute(() -> {
+                    Vehicle v = com.chunkworks.vanillawheels.VehicleItem.place(helper.getLevel(), sp, broken,
+                            helper.absoluteVec(new Vec3(20.5, Rigs.FLOOR, 20.5)), 0.0f);
+                    helper.assertTrue(v instanceof Aircraft, "set down: " + v);
+                    a[0] = (Aircraft) v;
+                    helper.assertValueEqual(a[0].condition(), 0, "broken");
+                    y0[0] = a[0].getY();
+                    Rigs.crew(helper, a[0]);
+                    a[0].setScriptedFlight(Rigs.fly(0, 0, 1));   // asked to climb
+                })
+                .thenIdle(80)
+                .thenExecute(() -> {
+                    helper.assertTrue(!a[0].isRemoved(), "still where it was put, eighty ticks on");
+                    helper.assertTrue(a[0].getY() < y0[0] + 0.1, "and it cannot fly: " + (a[0].getY() - y0[0]));
+                    a[0].ejectPassengers();
+                    sp.interactOn(a[0], net.minecraft.world.InteractionHand.MAIN_HAND);
+                    helper.assertTrue(a[0].condition() > 0, "a click repairs it a step: " + a[0].condition());
+                    Rigs.logOff(sp);
                 })
                 .thenSucceed();
     }
@@ -294,10 +330,10 @@ public final class FlightGameTests {
         a.move(MoverType.PLAYER, new Vec3(0.9, 0, 0));
         double turn = Math.toRadians(4.0);
         a.move(MoverType.PLAYER, new Vec3(0.9 * Math.cos(turn), 0, 0.9 * Math.sin(turn)));
-        helper.assertValueEqual(a.condition(), Wear.FULL_CONDITION, "a turn the flight can make is no crash");
+        helper.assertValueEqual(a.condition(), Condition.MAX, "a turn the flight can make is no crash");
         a.move(MoverType.PLAYER, new Vec3(0.9, 0, 0));
         a.move(MoverType.PLAYER, new Vec3(0.3, 0, 0));   // stopped a third of the way through the tick
-        int once = Wear.FULL_CONDITION - Wear.crash(0.9);
+        int once = Condition.MAX - Flight.CRASH.crash(0.9);
         helper.assertValueEqual(a.condition(), once, "a crash at the speed it carried, 0.9");
         a.move(MoverType.PLAYER, Vec3.ZERO);              // the rest of the same impact
         helper.assertValueEqual(a.condition(), once, "charged once");

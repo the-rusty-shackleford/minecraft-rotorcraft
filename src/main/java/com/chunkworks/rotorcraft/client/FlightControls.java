@@ -21,6 +21,7 @@ import com.chunkworks.rotorcraft.Aircraft;
 import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.FlightInput;
 import com.chunkworks.rotorcraft.net.Payloads;
+import com.chunkworks.vanillawheels.client.Keys;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -30,7 +31,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * The pilot's side of flying: the local player's keys as a {@link FlightInput} for the aircraft
  * they fly, the speed told to the server on a change (Vanilla Wheels' drive-state payload, so the
  * gauges and the engine note follow it everywhere), and the aircraft's keys sent as they are
- * pressed: get out from any seat, the hook and the sprayer from the pilot's.
+ * pressed: the hook and the sprayer, from the pilot's seat. Up, Down and Get out are Vanilla Wheels'
+ * (its D-0031).
  */
 public final class FlightControls {
     private FlightControls() {}
@@ -46,7 +48,7 @@ public final class FlightControls {
         }
         int forward = player.input.up ? 1 : player.input.down ? -1 : 0;
         int turn = player.input.right ? 1 : player.input.left ? -1 : 0;
-        int lift = RotorcraftKeys.ASCEND.isDown() ? 1 : RotorcraftKeys.DESCEND.isDown() ? -1 : 0;
+        int lift = Keys.lift();
         return new FlightInput(forward, turn, lift, powered, onGround, clearance);
     }
 
@@ -60,6 +62,10 @@ public final class FlightControls {
         }
     }
 
+    /** The hook and the sprayer act once a press, not on the keyboard's repeats (Vanilla Wheels' D-0032). */
+    private static final com.chunkworks.vanillawheels.client.Keys.Press HOOK_PRESS = new com.chunkworks.vanillawheels.client.Keys.Press(RotorcraftKeys.HOOK);
+    private static final com.chunkworks.vanillawheels.client.Keys.Press SPRAY_PRESS = new com.chunkworks.vanillawheels.client.Keys.Press(RotorcraftKeys.SPRAY);
+
     /** The aircraft's keys, each tick: sent while aboard, swallowed otherwise. */
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -69,20 +75,11 @@ public final class FlightControls {
             lastSpeed = Float.NaN;
             RotorcraftKeys.releaseAll();
         }
-        while (RotorcraftKeys.GET_OUT.consumeClick()) {
-            if (aboard != null) {
-                PacketDistributor.sendToServer(new Payloads.GetOut(aboard.getId()));
-            }
+        if (HOOK_PRESS.consume() && flying) {
+            PacketDistributor.sendToServer(new Payloads.Hook(aboard.getId()));
         }
-        while (RotorcraftKeys.HOOK.consumeClick()) {
-            if (flying) {
-                PacketDistributor.sendToServer(new Payloads.Hook(aboard.getId()));
-            }
-        }
-        while (RotorcraftKeys.SPRAY.consumeClick()) {
-            if (flying) {
-                PacketDistributor.sendToServer(new Payloads.Spray(aboard.getId()));
-            }
+        if (SPRAY_PRESS.consume() && flying) {
+            PacketDistributor.sendToServer(new Payloads.Spray(aboard.getId()));
         }
     }
 }

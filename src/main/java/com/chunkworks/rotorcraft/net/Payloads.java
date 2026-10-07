@@ -29,28 +29,15 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /**
- * What a client tells the server beyond Vanilla Wheels' own payloads (the speed, the pose): a key
- * pressed aboard an aircraft. Get out, from any seat; the hook and the sprayer, from the pilot's.
- * Each names the aircraft and is ignored unless the sender rides it (and, for the pilot's keys,
- * flies it). Sent on the press, never per tick.
+ * What a client tells the server beyond Vanilla Wheels' own payloads (the speed, the pose, the
+ * get-out key): a key pressed at an aircraft's controls, the hook or the sprayer. Each names the
+ * aircraft and is ignored unless the sender flies it. Sent on the press, never per tick.
  */
 public final class Payloads {
     private Payloads() {}
 
     /** Bumped when a payload's shape changes; a mismatch refuses the connection early. */
-    private static final String VERSION = "1";
-
-    /** The get-out key, from any seat. */
-    public record GetOut(int aircraft) implements CustomPacketPayload {
-        public static final Type<GetOut> TYPE = new Type<>(Rotorcraft.id("get_out"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, GetOut> STREAM_CODEC = StreamCodec.composite(
-                ByteBufCodecs.VAR_INT, GetOut::aircraft, GetOut::new);
-
-        @Override
-        public Type<? extends CustomPacketPayload> type() {
-            return TYPE;
-        }
-    }
+    private static final String VERSION = "2";
 
     /** The hook key, from the pilot's seat. */
     public record Hook(int aircraft) implements CustomPacketPayload {
@@ -78,11 +65,6 @@ public final class Payloads {
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(VERSION);
-        registrar.playToServer(GetOut.TYPE, GetOut.STREAM_CODEC, (payload, context) -> {
-            if (context.player() instanceof ServerPlayer player && player.level().getEntity(payload.aircraft()) instanceof Aircraft a && player.getVehicle() == a) {
-                a.getOut(player);
-            }
-        });
         registrar.playToServer(Hook.TYPE, Hook.STREAM_CODEC, (payload, context) -> {
             Aircraft a = flown(context, payload.aircraft());
             if (a != null) {

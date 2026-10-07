@@ -20,8 +20,9 @@ package com.chunkworks.rotorcraft.gametest;
 import com.chunkworks.rotorcraft.Aircraft;
 import com.chunkworks.rotorcraft.SlungLoad;
 import com.chunkworks.rotorcraft.api.Rotorcraft;
+import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.Sling;
-import com.chunkworks.rotorcraft.domain.Wear;
+import com.chunkworks.vanillawheels.domain.Condition;
 import java.util.Locale;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -160,15 +161,15 @@ public final class SlingGameTests {
                 .thenExecute(() -> {
                     helper.assertTrue(a.hookPoint().y < crate[0].eyePoint().y + Aircraft.HOOK_CLEAR + 0.1,
                             "and came down onto it: " + (a.hookPoint().y - crate[0].eyePoint().y) + trace);
-                    helper.assertValueEqual(a.condition(), Wear.FULL_CONDITION, "softly:" + trace);
+                    helper.assertValueEqual(a.condition(), Condition.MAX, "softly:" + trace);
                     a.setScriptedFlight(Rigs.fly(0, 0, 0));
                     a.hookKey(pilot);
                     helper.assertTrue(a.trailer() == null && crate[0].tower() == null, "let go once it rests");
                     helper.assertTrue(crate[0].getX() > start[0] + 15.0, "carried some way: " + (crate[0].getX() - start[0]));
                     helper.assertTrue(stretched[0] <= rope + 0.6, "never far past its rope while hooked: " + stretched[0]);
-                    helper.assertTrue(sink[1] <= Wear.TOUCHDOWN_SAFE, "set down softly: it met the floor sinking " + sink[1] + trace);
+                    helper.assertTrue(sink[1] <= Flight.CRASH.touchdownSafe(), "set down softly: it met the floor sinking " + sink[1] + trace);
                     helper.assertValueEqual(falling[0], 0.0, "on its rope it never counted as falling");
-                    helper.assertValueEqual(crate[0].condition(), Wear.FULL_CONDITION, "unworn:" + trace);
+                    helper.assertValueEqual(crate[0].condition(), Condition.MAX, "unworn:" + trace);
                     helper.assertTrue(crate[0].cargoAboard().contains(cow[0]), "the cow is still aboard");
                     helper.assertValueEqual(cow[0].getHealth(), health[0], "and unhurt");
                     helper.assertValueEqual(crate[0].getItem(0).getCount(), 10, "the apples are still in the chest");
@@ -201,7 +202,7 @@ public final class SlingGameTests {
                 .thenIdle(20)
                 .thenExecute(() -> {
                     a.setScriptedFlight(null);
-                    helper.assertTrue(crate.condition() < Wear.FULL_CONDITION, "and was worn: " + crate.condition());
+                    helper.assertTrue(crate.condition() < Condition.MAX, "and was worn: " + crate.condition());
                     helper.assertTrue(crate.getY() < helper.absoluteVec(new Vec3(0, roof, 0)).y, "still under the roof");
                 })
                 .thenSucceed();
@@ -275,7 +276,7 @@ public final class SlingGameTests {
                 .thenIdle(60)
                 .thenExecute(() -> {
                     helper.assertTrue(Math.abs(crate[0].getY() - surface) < 0.1, "resting on the surface, not the pond's floor: " + (crate[0].getY() - surface));
-                    helper.assertValueEqual(crate[0].condition(), Wear.FULL_CONDITION, "set down on the water softly, unworn");
+                    helper.assertValueEqual(crate[0].condition(), Condition.MAX, "set down on the water softly, unworn");
                     helper.assertValueEqual(cow[0].getAirSupply(), cow[0].getMaxAirSupply(), "the cow never went under");
                 })
                 .thenSucceed();

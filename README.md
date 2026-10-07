@@ -11,6 +11,10 @@ the first.
 It ships two things of its own: the **Sling Container**, the standard load, and the **Crop
 Sprayer**.
 
+**1.1.0** is built but not released: the hull, the crash judging, the up, down and get-out keys and
+the Shift mixin moved into Vanilla Wheels 1.13.0 (its D-0031), which a second protocol, the
+submarines, shares. Nothing changes in flight.
+
 ## Flying
 
 | Key (default) | Does |
@@ -24,7 +28,9 @@ Sprayer**.
 | V | crop sprayer on / off |
 | H | lights (Vanilla Wheels') |
 
-The keys are live only aboard an aircraft and can be rebound under Rotorcraft in Controls.
+The keys are live only aboard an aircraft. Space, Left Shift and R are Vanilla Wheels' *Up*, *Down*
+and *Get out* (shared by every vehicle that flies or dives, rebound under Vanilla Wheels in
+Controls); G and V are rebound under Rotorcraft.
 
 - **Spool-up.** Boarding as pilot starts the engine; the rotor spools up (three seconds on the
   Huey) before it will climb, and winds down when the pilot gets out. It burns fuel whenever the
@@ -36,7 +42,8 @@ The keys are live only aboard an aircraft and can be rebound under Rotorcraft in
   the load instead, so the load is set down as gently.
 - **Engine out.** Out of fuel in the air, or worn to nothing, it autorotates down at a quarter
   of a block a tick, still steering, and lands softly. A wreck in the air is not destroyed: it
-  becomes a packed wreck once it touches down, riders unhurt.
+  becomes a packed wreck once it touches down, riders unhurt. Set down again broken, it stays where
+  it is put, unflyable, until it is repaired by hand or on the lift (D-0004).
 - **Nobody aboard is ever hurt by flying.** No fall reaches a rider; it settles on water or lava
   and nobody goes under; it runs nothing over and breaks no glass or leaves. Riders cannot get
   out more than three blocks up ("Too high to get out").
@@ -120,16 +127,17 @@ A slung load is likewise a Vanilla Wheels profile (no engine, no seats) and
 
 ## Layout
 
-`src/domain` (JDK only, plain JUnit): `Flight` (the step, `struck`), `Airframe`, `FlightInput`,
-`Wear` (what a crash costs), `Sling` (the rope), `Swath` (the boom's columns), `Hull` (the probe
-points of the hull's boxes, and how far it and the rotors reach), `Exit` (the doors a rider gets
-out of), `Strike` (what a spinning rotor's disc touches, and how hard). `src/main`: `api`
+`src/domain` (the JDK and Vanilla Wheels' pure layer, plain JUnit): `Flight` (the step, `struck`,
+and `CRASH`, what a crash costs an aircraft as a Vanilla Wheels `Crash`), `Airframe`, `FlightInput`,
+`Sling` (the rope), `Swath` (the boom's columns), `Exit` (the doors a rider gets out of), `Strike`
+(what a spinning rotor's disc touches, and how hard). The hull's probe points (`Hull`) are Vanilla
+Wheels' since 1.1.0. `src/main`: `api`
 (`Rotorcraft`, `AircraftProfile`, `SlingProfile`), `Aircraft` and `SlungLoad` (the entities,
 extending Vanilla Wheels' `Vehicle`), `Floors` (fluid surfaces as floor), `RotorcraftContent`,
-`net/Payloads` (get out, hook, spray), `mixin/PlayerMixin`, and `client` (`FlightControls`,
+`net/Payloads` (hook, spray), and `client` (`FlightControls`,
 `RotorcraftKeys`, `AircraftRenderer`, `SlungLoadRenderer`, `Mist`, `SprayerIndicator`,
 `SprayerSound`). `src/gametest`: the box helicopter, the box boom (a hull of boxes) and the box
-crate, 29 gametests, the booth -- a mod of its own, never shipped.
+crate, 33 gametests, the booth -- a mod of its own, never shipped.
 
 ## Building and testing
 
@@ -139,7 +147,7 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 PATH="$JAVA_HOME/bin:$PATH"
 ./gradlew check              # plus the gametests and the booth (needs a display; -PskipBooth)
 ```
 
-Vanilla Wheels 1.12.0 and Carried come from Maven Local (`./gradlew publishToMavenLocal` in their
+Vanilla Wheels 1.13.0 and Carried come from Maven Local (`./gradlew publishToMavenLocal` in their
 repos first). Art and test assets: `uv run --no-project python devtools/art/build.py`.
 
 The booth flies a box helicopter on real key presses, sent through XTEST by

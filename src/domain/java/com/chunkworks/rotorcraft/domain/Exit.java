@@ -17,6 +17,7 @@
  */
 package com.chunkworks.rotorcraft.domain;
 
+import com.chunkworks.vanillawheels.domain.Hull;
 import java.util.List;
 
 /**

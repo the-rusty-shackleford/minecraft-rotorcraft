@@ -22,14 +22,18 @@ few seconds before it will lift off.
 | **V** | crop sprayer on / off |
 | **H** | lights |
 
-The keys only work while you're in a helicopter, and you can change them under *Rotorcraft* in
-Controls. Things to know:
+The keys only work while you're in a helicopter. You can change them in Controls: climb, descend
+and get out are *Up*, *Down* and *Get out* under *Vanilla Wheels* (every vehicle that flies or dives
+shares them), the hook and the sprayer are under *Rotorcraft*. Things to know:
 
 - **Let go of everything and it hovers** in place.
 - **Holding Shift always lands softly.** It slows down by itself near the ground, from any height.
 - **Nobody aboard is ever hurt by flying.** Not by landing, not by crashing, not by falling.
 - **Crashing damages the helicopter**, though: flying into a wall or a roof fast, or hitting the
   ground faster than a soft landing. Repair it like any vehicle.
+- **Wrecked in the air**, it comes down first, then it's packed into a broken item where it lands.
+  **Set a broken one down and repair it**: it stays where you put it, but it won't fly until it's
+  repaired. Right-click it (each click costs a little hunger) or put it on a Mechanic Lift.
 - **Out of fuel in the air**, it glides down slowly on its spinning rotor and lands.
 - **You can only get out (R) within three blocks of the ground.** Shift never drops you out. You
   step down to the ground beside your seat, out of your own side's door (the other side's, if a

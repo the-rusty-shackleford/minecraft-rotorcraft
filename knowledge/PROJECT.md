@@ -14,6 +14,35 @@ flight, the sling and the crop sprayer; aircraft mods (`minecraft-huey`, `minecr
 data. The plan is `~/.claude/plans/i-want-to-add-curious-locket.md`. Decisions D-0001 (flight),
 D-0002 (sling), D-0003 (sprayer).
 
+## 1.1.0 — built 2026-10-07, unreleased (the shared parts moved into Vanilla Wheels)
+
+nfx's submarines are a second protocol on Vanilla Wheels. Rusty chose (2026-10-07) that what both
+need move into Vanilla Wheels 1.13.0 (its D-0031) rather than be copied:
+- `domain/Hull`;
+- `domain/Wear`, now Vanilla Wheels' `Crash` with this protocol's speeds as `Flight.CRASH`;
+- the server's judging of reported moves;
+- the Up/Down/Get-out keys with the get-out payload;
+- the Shift mixin.
+
+`Aircraft` overrides Vanilla Wheels' hooks (`verticalControls`, `getOut`, `hullPoints`,
+`crashes`, `ownChange`, `crashed` with the anvil's sound). G and V are `Keys.RidingKey`s, and act
+once a press through Vanilla Wheels' `Keys.Press` (its D-0032): held past the keyboard's repeat
+delay, G had caught and let go of a load over and over since 1.0.0, and V switched the sprayer on
+and off.
+
+D-0004 rides in it (Rusty, 2026-10-07: a friend's Huey broke and could not be repaired): a broken
+aircraft set down from its item stays to be repaired; only a wreck made in the air is packed when it
+comes down. Before, it was packed again on its first tick, so nothing could reach it to mend it.
+
+Network "2". Nothing changes in flight:
+- 37 JUnit (49, less the 12 that moved);
+- the same 33 gametests, and a 34th: a broken aircraft set down from its item stays to be repaired (D-0004);
+- the real-key booth's 13 checks, Space and a real Left Shift reaching Vanilla Wheels' keys.
+
+The Huey's and the Chinook's gametests pass on it (their gametest code reads `Keys.UP` and
+`Condition.MAX` now). The wiki page says where the keys are rebound. Ships with the submarines, on
+Rusty's go.
+
 ## Status: 1.0.0 released 2026-10-07 in pack 1.75.0
 
 - Gate: 49 JUnit, 33 GameTests and the booth (13 checks) green; every new rule run against its

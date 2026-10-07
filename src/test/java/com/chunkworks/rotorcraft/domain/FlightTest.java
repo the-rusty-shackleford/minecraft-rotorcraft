@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
  * <li>Vertical, lifting: collective up (to the climb rate and no more), down high up (to the
  *     descent rate), let go (to a hover); on the ground with it down (no sink).</li>
  * <li>The cushion: held down from 0.5 to 300 blocks, starting at rest or at full descent, lands at
- *     no more than 0.2, under {@link Wear#TOUCHDOWN_SAFE}; autorotating too.</li>
+ *     no more than 0.2, under {@link Flight#CRASH}'s safe sink; autorotating too.</li>
  * <li>Unpowered in the air: sinks at {@link Flight#AUTOROTATION}, glides at {@link Flight#GLIDE} of
  *     top speed, still turns.</li>
  * <li>Horizontal, lifting: stick forward (to top speed and no more), back (to the reverse speed),
@@ -133,11 +133,13 @@ final class FlightTest {
                 double sink = touchdown(h, v0, true);
                 worst = Math.max(worst, sink);
                 assertTrue(sink <= 0.2, "from " + h + " blocks sinking " + v0 + ": met the floor at " + sink);
-                assertEquals(0, Wear.touchdown(sink), "a landing, not a crash: " + sink);
+                assertEquals(0, Flight.CRASH.touchdown(sink), "a landing, not a crash: " + sink);
             }
             assertTrue(touchdown(h, 0.0, false) <= 0.2, "autorotating from " + h);
         }
         assertTrue(worst > Flight.TOUCHDOWN - 0.01, "the test reached the touchdown at all: " + worst);
+        assertEquals(0, Flight.CRASH.touchdown(Flight.TOUCHDOWN), "the capped sink is a landing, with room for the step's lag");
+        assertTrue(Flight.CRASH.touchdownSafe() > Flight.TOUCHDOWN, "the crash's safe sink is over the touchdown");
     }
 
     // --- unpowered -------------------------------------------------------------------

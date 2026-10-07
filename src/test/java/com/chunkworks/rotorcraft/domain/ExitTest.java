@@ -20,6 +20,7 @@ package com.chunkworks.rotorcraft.domain;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.chunkworks.vanillawheels.domain.Hull;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

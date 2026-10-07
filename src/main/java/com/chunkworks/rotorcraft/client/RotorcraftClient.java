@@ -55,9 +55,6 @@ public final class RotorcraftClient {
 
     @SubscribeEvent
     public static void onKeys(RegisterKeyMappingsEvent event) {
-        event.register(RotorcraftKeys.ASCEND);
-        event.register(RotorcraftKeys.DESCEND);
-        event.register(RotorcraftKeys.GET_OUT);
         event.register(RotorcraftKeys.HOOK);
         event.register(RotorcraftKeys.SPRAY);
     }

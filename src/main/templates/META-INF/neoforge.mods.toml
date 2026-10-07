@@ -16,9 +16,6 @@ the aircraft, the sling hook and the slung loads, and the crop sprayer.
 Aircraft mods nest this jar inside their own; the loader keeps one copy.
 '''
 
-[[mixins]]
-config="rotorcraft.mixins.json"
-
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
@@ -37,6 +34,6 @@ config="rotorcraft.mixins.json"
 [[dependencies.${mod_id}]]
     modId="vanillawheels"
     type="required"
-    versionRange="[1.12.0,2.0)"
+    versionRange="[1.13.0,2.0)"
     ordering="AFTER"
     side="BOTH"
