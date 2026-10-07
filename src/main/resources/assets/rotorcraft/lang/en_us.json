@@ -19,5 +19,7 @@
   "rotorcraft.sprayer.empty": "The sprayer is empty",
   "rotorcraft.hud.sprayer": "Sprayer %s",
   "rotorcraft.hud.spraying": "Spraying %s",
+  "death.attack.rotorcraft.rotor": "%1$s was cut down by %2$s's rotor",
+  "death.attack.rotorcraft.rotor.item": "%1$s was cut down by %2$s's rotor",
   "subtitles.rotorcraft.sprayer": "Sprayer hisses"
 }

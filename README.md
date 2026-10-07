@@ -48,9 +48,16 @@ The keys are live only aboard an aircraft and can be rebound under Rotorcraft in
   into it: about a third of a Huey at top speed into a wall, a wreck at one and a half blocks a
   tick. Each crash shows in the server log (`Rotorcraft: <aircraft> at <pos> crashed: <n>
   condition lost`). Repair it as any vehicle: right-click or the lift.
-- **Rotor blades** are drawn only; they pass through trees and walls without harm. The body
-  meets the world in the air as its profile's `hull` of boxes, a cabin, a boom and a fin each
-  probed all over, so a long tail stops on what is under its middle.
+- **Rotor blades** pass through trees and walls without harm, but a spinning rotor strikes
+  anything alive its disc touches (the blades' plane and a quarter of a block either side, out to
+  the rotor's `radius`, tilted with the body): 10 damage at full rotor speed, less as it spools up
+  or winds down, none under a fifth of it, armour counting and the game's knockback away from the
+  aircraft. A chicken or a cow dies at once; a player survives one strike. It is blamed on the
+  pilot, so the server's PvP rule and teams hold; with nobody at the controls it is nobody's.
+  Nothing aboard is ever struck. A Huey's main rotor clears anyone standing or jumping beside it;
+  its tail rotor's lowest sweep is at a standing player's head. Deaths read "was cut down by
+  <pilot>'s rotor". The body meets the world in the air as its profile's `hull` of boxes, a
+  cabin, a boom and a fin each probed all over, so a long tail stops on what is under its middle.
 
 ## The sling
 
@@ -116,7 +123,7 @@ A slung load is likewise a Vanilla Wheels profile (no engine, no seats) and
 `src/domain` (JDK only, plain JUnit): `Flight` (the step, `struck`), `Airframe`, `FlightInput`,
 `Wear` (what a crash costs), `Sling` (the rope), `Swath` (the boom's columns), `Hull` (the probe
 points of the hull's boxes, and how far it and the rotors reach), `Exit` (the doors a rider gets
-out of). `src/main`: `api`
+out of), `Strike` (what a spinning rotor's disc touches, and how hard). `src/main`: `api`
 (`Rotorcraft`, `AircraftProfile`, `SlingProfile`), `Aircraft` and `SlungLoad` (the entities,
 extending Vanilla Wheels' `Vehicle`), `Floors` (fluid surfaces as floor), `RotorcraftContent`,
 `net/Payloads` (get out, hook, spray), `mixin/PlayerMixin`, and `client` (`FlightControls`,

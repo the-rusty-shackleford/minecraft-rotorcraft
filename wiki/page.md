@@ -35,6 +35,10 @@ Controls. Things to know:
   step down to the ground beside your seat, out of your own side's door (the other side's, if a
   wall is in the way).
 - **The rotor blades pass through trees and walls** without harm; only the body bumps into things.
+- **But spinning blades cut down anything alive they touch**: a bird you fly into, a mob, a
+  player who jumps into them. At full speed a strike kills a chicken or a cow and takes up to
+  half a player's health. Nobody aboard is ever hit. Keep clear of the Huey's tail rotor: its
+  lowest sweep is at head height.
 
 ## The Sling Container
 

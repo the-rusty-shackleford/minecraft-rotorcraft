@@ -24,6 +24,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.CreativeModeTab;
@@ -75,6 +76,9 @@ public final class RotorcraftContent {
     /** The sprayer's hiss, while it sprays. */
     public static final DeferredHolder<SoundEvent, SoundEvent> SPRAYER_HISS = SOUNDS.register("sprayer",
             () -> SoundEvent.createVariableRangeEvent(Rotorcraft.id("sprayer")));
+
+    /** A spinning rotor's strike (data/rotorcraft/damage_type/rotor.json): blamed on the pilot, its knockback away from the aircraft. */
+    public static final ResourceKey<DamageType> ROTOR_STRIKE = ResourceKey.create(Registries.DAMAGE_TYPE, Rotorcraft.id("rotor"));
 
     /** effects: registers everything on {@code modBus} */
     public static void register(IEventBus modBus) {

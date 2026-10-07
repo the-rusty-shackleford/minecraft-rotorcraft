@@ -26,6 +26,7 @@ import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.FlightInput;
 import com.chunkworks.rotorcraft.domain.Hull;
 import com.chunkworks.rotorcraft.domain.Sling;
+import com.chunkworks.rotorcraft.domain.Strike;
 import com.chunkworks.rotorcraft.domain.Swath;
 import com.chunkworks.rotorcraft.domain.Wear;
 import com.chunkworks.vanillawheels.Vehicle;
@@ -33,9 +34,12 @@ import com.chunkworks.vanillawheels.api.VehicleProfile;
 import com.chunkworks.vanillawheels.domain.Suspension;
 import com.chunkworks.vanillawheels.domain.Vec;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -48,16 +52,18 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.vehicle.DismountHelper;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.DismountHelper;
 import net.minecraft.world.item.BoneMealItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
@@ -148,6 +154,12 @@ public class Aircraft extends Vehicle {
     @Nullable private double[] cachedHull;
     /** {reach, top}: how far across and how high anything of the hull and the rotors reaches, blocks. */
     private double[] cachedReach = {0.0, 0.0};
+    /** The rotors' discs in the body's frame (rotorDiscs), or null for none. */
+    @Nullable private double[] cachedRotors;
+    /** What a disc's neighbourhood holds this tick, the list reused tick to tick. */
+    private final List<LivingEntity> nearRotor = new ArrayList<>();
+    private final Predicate<LivingEntity> strikable = e -> e.isAlive() && !carries(e);
+    private static final EntityTypeTest<Entity, LivingEntity> LIVING = EntityTypeTest.forClass(LivingEntity.class);
 
     public Aircraft(EntityType<? extends Vehicle> type, Level level) {
         super(type, level);
@@ -175,8 +187,34 @@ public class Aircraft extends Vehicle {
             List<Hull.Box> boxes = cachedAircraft == null ? List.of() : cachedAircraft.hullBoxes(p);
             cachedHull = boxes.isEmpty() ? null : Hull.points(boxes);
             cachedReach = cachedAircraft == null ? new double[] {0.0, 0.0} : Hull.reach(boxes, cachedAircraft.discs(p));
+            cachedRotors = cachedAircraft == null ? null : rotorDiscs(cachedAircraft, p);
         }
         return cachedAircraft;
+    }
+
+    /**
+     * effects: returns the rotors that reach anything as runs of seven, blocks in the body's frame:
+     * the pivot (x, y, z), the unit axis (x, y, z), the reach; null for none
+     */
+    @Nullable
+    private static double[] rotorDiscs(AircraftProfile ap, VehicleProfile p) {
+        double[] out = new double[7 * ap.rotors().size()];
+        int k = 0;
+        for (AircraftProfile.Rotor r : ap.rotors()) {
+            Vec c = p.localBlocks(r.pivot()), a = p.localBlocks(r.axis());
+            double len = Math.sqrt(a.x() * a.x() + a.y() * a.y() + a.z() * a.z());
+            if (r.radius() <= 0.0 || len == 0.0) {
+                continue;
+            }
+            out[k++] = c.x();
+            out[k++] = c.y();
+            out[k++] = c.z();
+            out[k++] = a.x() / len;
+            out[k++] = a.y() / len;
+            out[k++] = a.z() / len;
+            out[k++] = p.blocks(r.radius());
+        }
+        return k == 0 ? null : java.util.Arrays.copyOf(out, k);
     }
 
     /** effects: returns the numbers it flies by, or null without an aircraft profile */
@@ -527,6 +565,51 @@ public class Aircraft extends Vehicle {
         return own.minmax(new AABB(getX() - reach, getY() - 1.0, getZ() - reach, getX() + reach, getY() + top + 1.0, getZ() + reach));
     }
 
+    // --- the rotors' strike ----------------------------------------------------------
+
+    /**
+     * effects: on the server, strikes each living thing a spinning rotor's disc touches
+     * ({@link Strike}), the discs tilted with the body as they are drawn: damage by the rotor's
+     * speed, blamed on the pilot so the server's PvP rule and teams hold, and the game's knockback
+     * away from the aircraft. Nothing aboard is struck (the box boom's rider, its head through the
+     * disc, was killed without that); a slung load hangs on its rope, far under any disc. Blocks
+     * are untouched: the blades still pass through trees and walls.
+     */
+    private void strike() {
+        double damage = Strike.damage(serverSpool);
+        double[] rotors = cachedRotors;
+        if (damage <= 0.0 || rotors == null) {
+            return;
+        }
+        Suspension s = suspension(1.0f);
+        DamageSource source = null;
+        for (int i = 0; i < rotors.length; i += 7) {
+            Vec3 hub = position().add(posed(new Vec(rotors[i], rotors[i + 1], rotors[i + 2]), s)).add(0.0, s.lift(), 0.0);
+            // Vanilla's rotations turn by its sine table: the axis is a hair off unit length after them.
+            Vec3 axis = posed(new Vec(rotors[i + 3], rotors[i + 4], rotors[i + 5]), s).normalize();
+            double reach = rotors[i + 6];
+            Strike.Disc disc = new Strike.Disc(hub.x, hub.y, hub.z, axis.x, axis.y, axis.z, reach);
+            nearRotor.clear();
+            level().getEntities(LIVING, new AABB(hub, hub).inflate(reach + Strike.HALF_THICKNESS), strikable, nearRotor);
+            for (LivingEntity e : nearRotor) {
+                AABB b = e.getBoundingBox();
+                if (Strike.touches(disc, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ)) {
+                    if (source == null) {
+                        source = new DamageSource(level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE)
+                                .getHolderOrThrow(RotorcraftContent.ROTOR_STRIKE), this, getControllingPassenger());
+                    }
+                    e.hurt(source, (float) damage);
+                }
+            }
+        }
+        nearRotor.clear();
+    }
+
+    /** effects: returns whether {@code e} rides this aircraft, in a seat or on another rider */
+    private boolean carries(Entity e) {
+        return e.getRootVehicle() == this;
+    }
+
     // --- the tick ------------------------------------------------------------------
 
     @Override
@@ -556,6 +639,7 @@ public class Aircraft extends Vehicle {
         if (!(getControllingPassenger() instanceof Player)) {
             lastReported = null;
         }
+        strike();
         // A wreck that came down is a wreck now.
         if (condition() == 0 && !isRemoved() && standing(clearance(p))) {
             super.destroy(damageSources().generic());
