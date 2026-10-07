@@ -55,7 +55,8 @@ Load the **Sling Container** on the ground: open its doors, lead animals (or Ser
 in as with the Trailer, and fill its chests. Then hover over it with the hook within reach (the
 hook within a block and a half of straight above its ring, no higher than its rope and a block
 and a half) and press **G**. It lifts as you climb, swings under you as you fly, and is set down
-softly as you hold Shift. Press **G** again once it rests to let it go: hanging, the hook will not
+softly as you hold Shift; held down further, the hook comes to rest just over the load's ring
+and no lower. Press **G** again once it rests to let it go: hanging, the hook will not
 let go ("Set the load down first"). On the ground, a crouching empty-handed click on its ring also
 lets it go. A load that catches under something (an overhang, a roof) and is held a block and a
 half past its rope lets go, worn by what it hit. Nothing in it is hurt; it rests on water as on

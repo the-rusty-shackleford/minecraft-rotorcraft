@@ -83,6 +83,11 @@ public class SlungLoad extends Vehicle {
         return onGround() || !level().noCollision(this, getBoundingBox().move(0.0, -1.0, 0.0)) || clearance() < 0.05;
     }
 
+    /** effects: returns whether it is down on its floor -- the ground's collision, or a floor (a fluid's surface) within a hair under it: past this its aircraft's descent is eased onto its eye instead */
+    public boolean landed() {
+        return onGround() || clearance() < 0.05;
+    }
+
     /**
      * effects: ticks as a vehicle does; while it hangs from an aircraft, its fall distance is reset
      * every tick -- held on its rope it is not falling, and the game would hand every swing and

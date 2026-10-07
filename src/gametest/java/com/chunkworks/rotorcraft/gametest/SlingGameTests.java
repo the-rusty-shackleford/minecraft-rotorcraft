@@ -153,7 +153,14 @@ public final class SlingGameTests {
                 .thenIdle(30)
                 .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, -1)))
                 .thenWaitUntil(() -> helper.assertTrue(crate[0].resting(), "set down:" + trace))
+                // Still held down with the load resting on the hook: the hook comes softly down onto the
+                // load's eye and stops a quarter block over it, the aircraft never sinking into its load.
+                .thenExecuteFor(80, () -> helper.assertTrue(a.hookPoint().y >= crate[0].eyePoint().y + Aircraft.HOOK_CLEAR - 0.02,
+                        "the hook stays over the resting load's eye: " + (a.hookPoint().y - crate[0].eyePoint().y) + trace))
                 .thenExecute(() -> {
+                    helper.assertTrue(a.hookPoint().y < crate[0].eyePoint().y + Aircraft.HOOK_CLEAR + 0.1,
+                            "and came down onto it: " + (a.hookPoint().y - crate[0].eyePoint().y) + trace);
+                    helper.assertValueEqual(a.condition(), Wear.FULL_CONDITION, "softly:" + trace);
                     a.setScriptedFlight(Rigs.fly(0, 0, 0));
                     a.hookKey(pilot);
                     helper.assertTrue(a.trailer() == null && crate[0].tower() == null, "let go once it rests");

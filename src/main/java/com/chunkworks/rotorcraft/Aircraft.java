@@ -93,6 +93,8 @@ public class Aircraft extends Vehicle {
 
     /** How far over the floor a rider may get out, blocks: a drop nobody is hurt by. */
     public static final double GET_OUT = 3.0;
+    /** How far over a resting load's eye the hook stops coming down, blocks. */
+    public static final double HOOK_CLEAR = 0.25;
     /** The most bone meal a sprayer's tank holds. */
     public static final int TANK = 256;
     /** The highest a boom doses crops from, blocks over them. */
@@ -227,9 +229,13 @@ public class Aircraft extends Vehicle {
         boolean powered = engineCanRun();
         // The descent is capped by the floor under whatever hangs lowest: a load on the hook is set down
         // as gently as the aircraft itself. The load follows after this step, so its height is a tick
-        // old: the cap reads it a tick's sink lower, braking a tick sooner.
-        double cushion = trailer() instanceof SlungLoad load && !load.resting()
-                ? Math.min(clearance, Math.max(0.0, load.clearance() - Math.max(0.0, -flight.vy()))) : clearance;
+        // old: the cap reads it a tick's sink lower, braking a tick sooner. Once the load is down, the
+        // floor is its eye: the hook comes down softly onto it and no lower ({@link #overTheLoad}).
+        double cushion = clearance;
+        if (trailer() instanceof SlungLoad load) {
+            cushion = load.landed() ? Math.min(clearance, overLoad(load))
+                    : Math.min(clearance, Math.max(0.0, load.clearance() - Math.max(0.0, -flight.vy())));
+        }
         FlightInput in = level().isClientSide() ? com.chunkworks.rotorcraft.client.FlightControls.input(this, powered, standing, cushion)
                 : scripted != null ? scripted.in(powered, standing, cushion)
                 : FlightInput.unpiloted(standing, cushion);
@@ -426,6 +432,7 @@ public class Aircraft extends Vehicle {
         if (aircraft() == null || p == null || onGround()) {
             return super.footprintClamp(delta);
         }
+        delta = overTheLoad(delta);
         if (hullBlocked(p, 0.0, 0.0, 0.0) || !hullBlocked(p, delta.x, delta.y, delta.z)) {
             return delta;
         }
@@ -439,6 +446,26 @@ public class Aircraft extends Vehicle {
             }
         }
         return delta.scale(Math.max(0.0, lo - 0.02));
+    }
+
+    /**
+     * effects: returns {@code delta} with its descent cut short so the hook, over a load that is down
+     * on its floor while still hooked, comes no lower than {@link #HOOK_CLEAR} over the load's eye:
+     * a rope cannot push, and a hooked load, being of its train, is no obstacle to the body (Vanilla
+     * Wheels' {@code canCollideWith}), so without this the aircraft sank through its own load
+     */
+    private Vec3 overTheLoad(Vec3 delta) {
+        if (delta.y >= 0.0 || !(trailer() instanceof SlungLoad load) || !load.landed()) {
+            return delta;
+        }
+        double room = overLoad(load);
+        return delta.y < -room ? new Vec3(delta.x, -room, delta.z) : delta;
+    }
+
+    /** effects: returns how far the hook may still come down over {@code load}: to HOOK_CLEAR over its eye, and never less than nothing */
+    private double overLoad(SlungLoad load) {
+        Vec3 hook = hookPoint(), eye = load.eyePoint();
+        return hook == null || eye == null ? Double.MAX_VALUE : Math.max(0.0, hook.y - eye.y - HOOK_CLEAR);
     }
 
     /**
