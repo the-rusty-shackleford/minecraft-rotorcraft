@@ -11,7 +11,7 @@ the first.
 It ships two things of its own: the **Sling Container**, the standard load, and the **Crop
 Sprayer**.
 
-**1.1.0** is built but not released: the hull, the crash judging, the up, down and get-out keys and
+**1.1.0** is released (pack 1.78.0): the hull, the crash judging, the up, down and get-out keys and
 the Shift mixin moved into Vanilla Wheels 1.13.0 (its D-0031), which a second protocol, the
 submarines, shares. Nothing changes in flight.
 

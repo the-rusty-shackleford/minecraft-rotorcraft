@@ -14,7 +14,7 @@ flight, the sling and the crop sprayer; aircraft mods (`minecraft-huey`, `minecr
 data. The plan is `~/.claude/plans/i-want-to-add-curious-locket.md`. Decisions D-0001 (flight),
 D-0002 (sling), D-0003 (sprayer).
 
-## 1.1.0 — built 2026-10-07, unreleased (the shared parts moved into Vanilla Wheels)
+## 1.1.0 — released 2026-10-08 in pack 1.78.0 (the shared parts moved into Vanilla Wheels)
 
 nfx's submarines are a second protocol on Vanilla Wheels. Rusty chose (2026-10-07) that what both
 need move into Vanilla Wheels 1.13.0 (its D-0031) rather than be copied:
@@ -40,8 +40,12 @@ Network "2". Nothing changes in flight:
 - the real-key booth's 13 checks, Space and a real Left Shift reaching Vanilla Wheels' keys.
 
 The Huey's and the Chinook's gametests pass on it (their gametest code reads `Keys.UP` and
-`Condition.MAX` now). The wiki page says where the keys are rebound. Ships with the submarines, on
-Rusty's go.
+`Condition.MAX` now). The wiki page says where the keys are rebound.
+
+Released with the submarines on Rusty's go, tag `v1.1.0` at `8b3b867`: the release gate (2026-10-08)
+green with 37 JUnit, 34 gametests and the booth's 14 checks; sha1 `cb585cc0` on GitHub and on the
+server (the server repo's `knowledge/releases/pack-1.78.0.md`). The Huey 1.1.1 and the Chinook 1.0.1
+nest it. Not yet seen on the box: the friend's broken Huey set down and mended.
 
 ## Status: 1.0.0 released 2026-10-07 in pack 1.75.0
 
