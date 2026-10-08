@@ -311,6 +311,7 @@ public final class RotorcraftBooth {
         s.add(new Step(t += 60, () -> {
             verdict("the booth's player flies the box helicopter", () -> client(mc, flown) instanceof Aircraft a
                     && a.getControllingPassenger() == mc.player ? null : "riding " + (mc.player == null ? null : mc.player.getVehicle()));
+            verdict("the boarding line names the get-out key, not Shift", () -> namesGetOut(mc));
             xkey("down", "space");
         }));
         s.add(new Step(t += 50, () -> xkey("up", "space")));
@@ -403,6 +404,24 @@ public final class RotorcraftBooth {
     }
 
     // --- plumbing --------------------------------------------------------
+
+    /**
+     * effects: null if the line the game showed on boarding names the get-out key, else what it
+     * said; the game's own line names Shift, which takes an aircraft down (Vanilla Wheels' D-0031)
+     */
+    @org.jetbrains.annotations.Nullable
+    private static String namesGetOut(Minecraft mc) {
+        String want = net.minecraft.network.chat.Component.translatable("mount.onboard", Keys.GET_OUT.getTranslatedKeyMessage()).getString();
+        String line;
+        try {
+            java.lang.reflect.Field f = net.minecraft.client.gui.Gui.class.getDeclaredField("overlayMessageString");
+            f.setAccessible(true);
+            line = f.get(mc.gui) instanceof net.minecraft.network.chat.Component c ? c.getString() : null;
+        } catch (ReflectiveOperationException e) {
+            line = "unreadable: " + e;
+        }
+        return want.equals(line) ? null : "line \"" + line + "\", want \"" + want + "\"";
+    }
 
     /** effects: returns the client's aircraft of {@code id}, or null */
     @org.jetbrains.annotations.Nullable
