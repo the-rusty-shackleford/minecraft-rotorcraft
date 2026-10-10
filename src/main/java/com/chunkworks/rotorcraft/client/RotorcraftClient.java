@@ -59,8 +59,15 @@ public final class RotorcraftClient {
         event.register(RotorcraftKeys.SPRAY);
     }
 
+    /** The Mods screen's config page for the feel of the controls ({@link FlightFeel}), saved live. Called from the mod's constructor on a client only. */
+    public static void registerConfigScreen(net.neoforged.fml.ModContainer container) {
+        container.registerExtensionPoint(net.neoforged.neoforge.client.gui.IConfigScreenFactory.class,
+                net.neoforged.neoforge.client.gui.ConfigurationScreen::new);
+    }
+
     @SubscribeEvent
     public static void onGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.HOTBAR, Rotorcraft.id("sprayer"), SprayerIndicator::draw);
+        event.registerAbove(VanillaGuiLayers.HOTBAR, Rotorcraft.id("collective"), CollectiveGauge::draw);
     }
 }

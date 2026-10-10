@@ -52,6 +52,7 @@
   },
   "climb": 0.5,
   "mass": 2.0,
+  "durability": 8.0,
   "cargo": {
     "adults": 4,
     "young": 8,

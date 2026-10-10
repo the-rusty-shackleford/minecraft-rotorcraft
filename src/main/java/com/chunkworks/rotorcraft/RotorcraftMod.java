@@ -23,7 +23,10 @@ import com.chunkworks.rotorcraft.api.SlingProfile;
 import com.chunkworks.rotorcraft.net.Payloads;
 import com.chunkworks.vanillawheels.api.VehicleKinds;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.registries.DataPackRegistryEvent;
 
 /**
@@ -33,8 +36,15 @@ import net.neoforged.neoforge.registries.DataPackRegistryEvent;
  */
 @Mod(Rotorcraft.MOD_ID)
 public final class RotorcraftMod {
-    public RotorcraftMod(IEventBus modBus) {
+    public RotorcraftMod(IEventBus modBus, ModContainer container) {
         RotorcraftContent.register(modBus);
+        // The pilot's feel of the controls: a client config, only ever loaded on a client; it holds no client types.
+        container.registerConfig(ModConfig.Type.CLIENT, com.chunkworks.rotorcraft.client.FlightFeel.SPEC);
+        modBus.addListener(com.chunkworks.rotorcraft.client.FlightFeel::onConfig);
+        // Its page under Mods, saved live, so it is tuned in flight; the client class is only touched on a client.
+        if (FMLEnvironment.dist.isClient()) {
+            com.chunkworks.rotorcraft.client.RotorcraftClient.registerConfigScreen(container);
+        }
         modBus.addListener(Payloads::register);
         modBus.addListener((DataPackRegistryEvent.NewRegistry event) -> {
             event.dataPackRegistry(Rotorcraft.AIRCRAFT, AircraftProfile.CODEC, AircraftProfile.CODEC);

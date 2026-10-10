@@ -152,7 +152,7 @@ public final class FlightGameTests {
     }
 
     @GameTest(template = "airfield", timeoutTicks = 300)
-    public void letGoItHoldsItsHeight(GameTestHelper helper) {
+    public void letGoTheLeverClimbsOnAndInItsDetentItHoldsItsHeight(GameTestHelper helper) {
         Rigs.floor(helper, SIZE);
         Aircraft a = Rigs.heli(helper, 20.5, Rigs.FLOOR, 20.5, 0.0f);
         Rigs.crew(helper, a);
@@ -160,8 +160,15 @@ public final class FlightGameTests {
         double[] held = new double[1];
         a.setScriptedFlight(Rigs.fly(0, 0, 1));
         helper.startSequence()
-                .thenWaitUntil(() -> helper.assertTrue(a.getY() > y0 + 8.0, "climbing: " + (a.getY() - y0)))
-                .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, 0)))
+                .thenWaitUntil(() -> helper.assertTrue(a.getY() > y0 + 5.0, "climbing: " + (a.getY() - y0)))
+                .thenExecute(() -> {
+                    a.setScriptedFlight(Rigs.fly(0, 0, 0));
+                    held[0] = a.getY();
+                })
+                .thenIdle(10)
+                .thenExecute(() -> helper.assertTrue(a.getY() > held[0] + 2.0 && a.flight().vy() > 0.3,
+                        "let go, the lever stays up and it climbs on: " + (a.getY() - held[0]) + ", " + a.flight().vy()))
+                .thenExecute(() -> Rigs.level(a, 0, 0))
                 .thenIdle(20)
                 .thenExecute(() -> held[0] = a.getY())
                 .thenExecuteFor(100, () -> helper.assertTrue(Math.abs(a.getY() - held[0]) <= 0.1,
@@ -205,7 +212,7 @@ public final class FlightGameTests {
                 .thenWaitUntil(() -> helper.assertTrue(a.tank().ticks() == 0, "the tank ran dry:" + ride.trace))
                 .thenExecute(() -> {
                     top[0] = a.getY() - y0;
-                    a.setScriptedFlight(Rigs.fly(0, 0, 0));
+                    Rigs.level(a, 0, 0);
                 })
                 .thenWaitUntil(() -> helper.assertTrue(a.onGround() && a.getY() < y0 + 0.01, "down again:" + ride.trace))
                 .thenIdle(5)
@@ -241,7 +248,7 @@ public final class FlightGameTests {
         a.setScriptedFlight(Rigs.fly(0, 0, 1));
         helper.startSequence()
                 .thenWaitUntil(() -> helper.assertTrue(a.getY() > y0 + 3.0, "up off the ground"))
-                .thenExecute(() -> a.setScriptedFlight(Rigs.fly(1, 0, 0)))
+                .thenExecute(() -> Rigs.level(a, 1, 0))
                 .thenWaitUntil(() -> helper.assertTrue(a.condition() < Condition.MAX, "into the wall:" + ride.trace))
                 .thenIdle(10)
                 .thenExecute(() -> {
@@ -302,7 +309,7 @@ public final class FlightGameTests {
         helper.startSequence()
                 .thenWaitUntil(() -> helper.assertTrue(a.getY() > y0 + 15.0, "climbing"))
                 .thenExecute(() -> {
-                    a.setScriptedFlight(Rigs.fly(0, 0, 0));
+                    Rigs.level(a, 0, 0);
                     a.hurt(helper.getLevel().damageSources().generic(), 5.0f);   // all of it: 5 x 2000
                     helper.assertValueEqual(a.condition(), 0, "worn to nothing");
                     helper.assertTrue(!a.isRemoved(), "but not a wreck in the air");

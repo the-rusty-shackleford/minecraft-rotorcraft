@@ -21,6 +21,7 @@ import com.chunkworks.carried.api.Carried;
 import com.chunkworks.rotorcraft.api.AircraftProfile;
 import com.chunkworks.rotorcraft.api.Rotorcraft;
 import com.chunkworks.rotorcraft.domain.Airframe;
+import com.chunkworks.rotorcraft.domain.Controls;
 import com.chunkworks.rotorcraft.domain.Exit;
 import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.FlightInput;
@@ -249,12 +250,25 @@ public class Aircraft extends Vehicle {
         this.scripted = input;
     }
 
+    /**
+     * effects: puts the collective lever at {@code lever} (0 bottom, {@link Flight#HOVER} its detent,
+     * 1 top) on the side that flies it: a script's hand on it, as a gametest's; the keys move it from there
+     * throws: IllegalArgumentException outside 0..1
+     */
+    public void setCollective(double lever) {
+        if (!(lever >= 0.0 && lever <= 1.0)) {
+            throw new IllegalArgumentException("the collective is 0..1: " + lever);
+        }
+        flight = flight.withCollective(lever);
+    }
+
     @Override
     protected void takeTheWheel() {
         super.takeTheWheel();
-        // Fly on from what the world has: its motion, its heading, the rotor as it is turning.
+        // Fly on from what the world has: its motion, its heading, the rotor as it is turning; the
+        // collective in its detent, so whoever takes the controls holds the height until they move it.
         flight = new Flight(getX() - xo, getY() - yo, getZ() - zo, Flight.wrap(Math.toRadians(getYRot())), 0.0,
-                Mth.clamp(entityData.get(DATA_ROTOR), 0.0f, 1.0f), 0.0, 0.0);
+                Mth.clamp(entityData.get(DATA_ROTOR), 0.0f, 1.0f), 0.0, 0.0, Flight.HOVER, 0.0);
     }
 
     @Override
@@ -279,7 +293,7 @@ public class Aircraft extends Vehicle {
         FlightInput in = level().isClientSide() ? com.chunkworks.rotorcraft.client.FlightControls.input(this, powered, standing, cushion)
                 : scripted != null ? scripted.in(powered, standing, cushion)
                 : FlightInput.unpiloted(standing, cushion);
-        flight = flight.step(in, a);
+        flight = flight.step(in, a, level().isClientSide() ? com.chunkworks.rotorcraft.client.FlightFeel.controls() : Controls.DEFAULT);
         setYRot((float) Math.toDegrees(flight.heading()));
         Vec3 want = new Vec3(flight.vx(), flight.vy(), flight.vz());
         double x0 = getX(), y0 = getY(), z0 = getZ();

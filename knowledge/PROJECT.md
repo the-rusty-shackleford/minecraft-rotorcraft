@@ -14,6 +14,26 @@ flight, the sling and the crop sprayer; aircraft mods (`minecraft-huey`, `minecr
 data. The plan is `~/.claude/plans/i-want-to-add-curious-locket.md`. Decisions D-0001 (flight),
 D-0002 (sling), D-0003 (sprayer).
 
+## 1.2.0 — built and gated 2026-10-10, unreleased (the collective lever and its dial, D-0005; its own tab)
+
+- **The collective is a lever** that stays where it is let go, holding the height in its detent at the
+  middle; the **stick** tilts further the longer it is held and springs back level let go (D-0005).
+  The feel is the pilot's (`config/rotorcraft-client.toml`, `client/FlightFeel`, `domain/Controls`);
+  Rusty flew the defaults in the 4070 playtest (2026-10-10) and said "Looks good", so they stand: a
+  sweep in a second, a tenth of the travel the detent at a quarter speed, full tilt in a second and a
+  half, back in half a second, springing back. Found on the way and told him: with the airframes'
+  acceleration (top speed in about 2.4 s) a springing stick changes the lean, hardly the speed; a
+  stick that stays is a setting away.
+- **The dial** over the hotbar, as Immersive Aircraft's (Rusty, on a first bar left of the hotbar:
+  "looks like shit and its in a weird spot. I like the circular throttle bar from immersive aircraft
+  more"; of two colourings he chose the throttle's): `devtools/art/gauge.py` draws it.
+- **Its own creative tab**: the aircraft, the slung loads, their chassis and the Crop Sprayer
+  (Vanilla Wheels 1.14.0 leaves them out of its own).
+- The Sling Container's durability is 8 (Vanilla Wheels' D-0034). Network "2" unchanged: the lever is
+  the pilot's client's flight state; the server bounds every move by the airframe as before.
+- Gate: the release gate (2026-10-10, `clean build --no-build-cache`) green with 43 JUnit, 35 gametests and the booth's 19 checks. The gametests script the lever into its detent where they hover
+  (`Rigs.level`); the booth flies the box helicopter on real keys through the lever and films the dial.
+
 ## 1.1.0 — released 2026-10-08 in pack 1.78.0 (the shared parts moved into Vanilla Wheels)
 
 nfx's submarines are a second protocol on Vanilla Wheels. Rusty chose (2026-10-07) that what both

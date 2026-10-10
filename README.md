@@ -15,14 +15,19 @@ Sprayer**.
 the Shift mixin moved into Vanilla Wheels 1.13.0 (its D-0031), which a second protocol, the
 submarines, shares. Nothing changes in flight.
 
+**1.2.0** (unreleased) makes the collective a lever that stays where it is let go and the stick
+tilt further the longer it is held (D-0005), gives the aircraft, the loads and the sprayer a creative
+tab of their own (**Rotorcraft**; Vanilla Wheels' tab keeps the ground vehicles), and the Sling
+Container a truck's durability, 8 (Vanilla Wheels 1.14.0's D-0034). It needs Vanilla Wheels 1.14.0.
+
 ## Flying
 
 | Key (default) | Does |
 |---|---|
-| W / S | stick: fly forward / back; let go and it brakes to a hover |
+| W / S | stick: tilts further forward / back the longer it is held; let go and it springs back and brakes to a hover |
 | A / D | pedals: turn |
-| Space | climb |
-| Left Shift | descend (never gets you out, as in Immersive Aircraft) |
+| Space | collective lever up: it stays where you let it go |
+| Left Shift | collective lever down (never gets you out, as in Immersive Aircraft) |
 | R | get out: only within three blocks of the ground |
 | G | hook a load, or let a resting one go |
 | V | crop sprayer on / off |
@@ -35,9 +40,21 @@ Controls); G and V are rebound under Rotorcraft.
 - **Spool-up.** Boarding as pilot starts the engine; the rotor spools up (three seconds on the
   Huey) before it will climb, and winds down when the pilot gets out. It burns fuel whenever the
   rotor is driven, hovering included; a creative pilot burns none.
-- **Hover.** With the collective let go, it holds its height. Let go of the stick and it brakes
-  to a hover.
-- **Landing.** Hold Shift all the way down: the descent slows by itself near the ground, never
+- **The collective** (D-0005) is a lever, shown on a dial over the hotbar where Immersive
+  Aircraft shows its throttle: the arc is lit up to the lever, and the rotor turns inside. Space and
+  Shift move it, a full sweep in a second, and it stays where you let it go. In its **detent** at
+  the middle (the white tick at the dial's top) it holds the height; above it climbs and below it descends, faster the
+  further from the detent. The lever moves slower through the detent, so you feel a held key pass
+  it: from the top, about two thirds of a second of Shift sets it there. Taking the controls, you
+  find it in the detent.
+- **The stick** tilts the nose further the longer W or S is held (full in a second and a half),
+  and it flies at that share of its top speed. Let go and it springs back level and brakes to a
+  hover.
+- **The feel is yours** (`config/rotorcraft-client.toml`, or Mods, Rotorcraft, Config, saved
+  live): the lever's sweep time, its detent's width and slowdown, the stick's tilt and spring
+  times, and whether the stick stays where you let it go, as the lever does. The server bounds
+  every move by the aircraft's own rates whatever these say.
+- **Landing.** Shift the lever all the way down: the descent slows by itself near the ground, never
   meeting it faster than a soft landing, from any height. With a load on the hook it slows for
   the load instead, so the load is set down as gently.
 - **Engine out.** Out of fuel in the air, or worn to nothing, it autorotates down at a quarter
@@ -72,7 +89,7 @@ Load the **Sling Container** on the ground: open its doors, lead animals (or Ser
 in as with the Trailer, and fill its chests. Then hover over it with the hook within reach (the
 hook within a block and a half of straight above its ring, no higher than its rope and a block
 and a half) and press **G**. It lifts as you climb, swings under you as you fly, and is set down
-softly as you hold Shift; held down further, the hook comes to rest just over the load's ring
+softly as you pull the lever down; held down further, the hook comes to rest just over the load's ring
 and no lower. Press **G** again once it rests to let it go: hanging, the hook will not
 let go ("Set the load down first"). On the ground, a crouching empty-handed click on its ring also
 lets it go. A load that catches under something (an overhang, a roof) and is held a block and a

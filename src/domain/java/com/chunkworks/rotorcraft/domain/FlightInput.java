@@ -23,8 +23,10 @@ package com.chunkworks.rotorcraft.domain;
  * and how far below it the floor is.
  *
  * <p>RI: forward, turn and lift are -1, 0 or 1; clearance is finite and not negative.
- * AF: forward 1 is the stick pushed forward (W), -1 pulled back (S); turn 1 is the right pedal (D),
- *     -1 the left (A); lift 1 is the collective up (ascend), -1 down (descend); powered says the
+ * AF: forward 1 is the stick's key held forward (W), -1 back (S), each tick held tilting it further
+ *     ({@link Flight#stick}); turn 1 is the right pedal (D), -1 the left (A); lift 1 is the
+ *     collective's key held up (ascend), -1 down (descend), moving the lever, which stays where it
+ *     is let go ({@link Flight#lever}); powered says the
  *     engine turns the rotor (a pilot aboard, fuel, the aircraft not a wreck); onGround says it
  *     stands on something; clearance is the height of its underside over the floor below it --
  *     the ground, or water, which it settles on -- in blocks.

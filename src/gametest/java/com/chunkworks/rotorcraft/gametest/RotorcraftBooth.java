@@ -20,7 +20,9 @@ package com.chunkworks.rotorcraft.gametest;
 import com.chunkworks.rotorcraft.Aircraft;
 import com.chunkworks.rotorcraft.RotorcraftContent;
 import com.chunkworks.rotorcraft.SlungLoad;
+import com.chunkworks.rotorcraft.client.FlightFeel;
 import com.chunkworks.rotorcraft.client.RotorcraftKeys;
+import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.FlightInput;
 import com.chunkworks.vanillawheels.Vehicle;
 import com.chunkworks.vanillawheels.client.Keys;
@@ -262,7 +264,7 @@ public final class RotorcraftBooth {
         })));
         s.add(new Step(t += 20, () -> onServer(mc, sp -> {
             if (sp.serverLevel().getEntity(heli) instanceof Aircraft a) {
-                a.setScriptedFlight(new FlightInput(0, 0, 0, true, false, 0.0));
+                Rigs.level(a, 0, 0);
                 aim(sp, a.position().add(-1.0, -1.5, -9.5), a.position().add(0.0, -1.5, 0.0));
             }
         })));
@@ -287,11 +289,21 @@ public final class RotorcraftBooth {
     private static double hover;
     private static Process shiftDown;
 
+    /** effects: returns the collective lever of the box helicopter as the booth's player's client flies it, NaN without one */
+    private static double lever(Minecraft mc) {
+        Aircraft a = client(mc, flown);
+        return a == null ? Double.NaN : a.flight().collective();
+    }
+
     /**
-     * The booth's player flies a box helicopter on real key presses (devtools/booth/xkey.py): Space
-     * climbs it, it holds its height with no key held, held Left Shift brings it down and leaves G
-     * working, and a Shift let go after getting out is not still held on boarding again. Real
-     * presses, because NeoForge reads Shift from GLFW's own key state, which nothing else moves.
+     * The booth's player flies a box helicopter on real key presses (devtools/booth/xkey.py). The
+     * collective is a lever (1.2.0): it stands in its detent as the pilot takes the controls; Space
+     * takes it to the top and it stays there let go, the aircraft climbing on; a Shift of about two
+     * thirds of a second brings it from the top into its detent, where it holds the height with no
+     * key held; held Left Shift brings it down and leaves G working; a Shift let go after getting
+     * out is not still held on boarding again, and the lever is back in its detent. The gauge is
+     * filmed at the top and in the detent. Real presses, because NeoForge reads Shift from GLFW's
+     * own key state, which nothing else moves.
      * effects: adds the steps from {@code t}; returns the last step's tick
      */
     private static int keys(Minecraft mc, List<Step> s, int t) {
@@ -312,6 +324,8 @@ public final class RotorcraftBooth {
             verdict("the booth's player flies the box helicopter", () -> client(mc, flown) instanceof Aircraft a
                     && a.getControllingPassenger() == mc.player ? null : "riding " + (mc.player == null ? null : mc.player.getVehicle()));
             verdict("the boarding line names the get-out key, not Shift", () -> namesGetOut(mc));
+            double at = lever(mc);
+            verdict("the lever stands in its detent as the pilot takes the controls", () -> at == Flight.HOVER ? null : "lever " + at);
             xkey("down", "space");
         }));
         s.add(new Step(t += 50, () -> xkey("up", "space")));
@@ -319,11 +333,31 @@ public final class RotorcraftBooth {
             Aircraft a = client(mc, flown);
             hover = a == null ? Double.NaN : a.getY();
             verdict("a real Space climbs it", () -> hover > ground + 3.0 ? null : "height " + (hover - ground));
+            double at = lever(mc);
+            verdict("let go, the lever stays at the top", () -> at == 1.0 ? null : "lever " + at);
+            mc.options.hideGui = false;
         }));
-        s.add(new Step(t += 40, () -> {
+        s.add(new Step(t += 5, () -> shoot(mc, "booth-collective-top")));
+        s.add(new Step(t += 15, () -> {
             Aircraft a = client(mc, flown);
             double y = a == null ? Double.NaN : a.getY();
-            verdict("it holds its height with no key held", () -> Math.abs(y - hover) < 0.3 ? null : "moved " + (y - hover));
+            verdict("and it climbs on", () -> y > hover + 1.5 ? null : "moved " + (y - hover));
+            shiftDown = xkey("down", "Shift_L");
+        }));
+        s.add(new Step(t += 13, () -> xkey("up", "Shift_L")));
+        s.add(new Step(t += 30, () -> {
+            double at = lever(mc);
+            verdict("a Shift of about two thirds of a second brings the lever from the top into its detent",
+                    () -> Math.abs(at - Flight.HOVER) <= FlightFeel.controls().detent() + 1e-9 ? null : "lever " + at);
+            shoot(mc, "booth-collective-detent");
+            Aircraft a = client(mc, flown);
+            hover = a == null ? Double.NaN : a.getY();
+        }));
+        s.add(new Step(t += 40, () -> {
+            mc.options.hideGui = true;
+            Aircraft a = client(mc, flown);
+            double y = a == null ? Double.NaN : a.getY();
+            verdict("in its detent it holds its height with no key held", () -> Math.abs(y - hover) < 0.3 ? null : "moved " + (y - hover));
             hover = y;
             shiftDown = xkey("down", "Shift_L");
         }));
@@ -354,6 +388,8 @@ public final class RotorcraftBooth {
             verdict("aboard again, a Left Shift let go off the aircraft is not still down", () -> client(mc, flown) instanceof Aircraft a
                     && a.getControllingPassenger() == mc.player && !Keys.DOWN.isDown()
                     ? null : "aboard " + (mc.player == null ? null : mc.player.getVehicle()) + ", Descend down " + Keys.DOWN.isDown());
+            double at = lever(mc);
+            verdict("and the lever, left at the bottom, is back in its detent", () -> at == Flight.HOVER ? null : "lever " + at);
             onServer(mc, ServerPlayer::stopRiding);
         }));
         return t;

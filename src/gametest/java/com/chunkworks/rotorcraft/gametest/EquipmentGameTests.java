@@ -25,9 +25,13 @@ import com.chunkworks.vanillawheels.ModContent;
 import com.chunkworks.vanillawheels.Vehicle;
 import com.chunkworks.vanillawheels.api.VanillaWheels;
 import com.chunkworks.vanillawheels.api.VehicleProfile;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.phys.Vec3;
@@ -36,8 +40,10 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * The protocol's standard equipment as it ships: the Sling Container's two profiles decode and it is
- * made as a slung load, with its doors, its two chests, its room for four grown animals and its rope;
- * the container and the Crop Sprayer each have their recipe.
+ * made as a slung load, with its doors, its two chests, its room for four grown animals, its rope and
+ * a truck's durability; the container and the Crop Sprayer each have their recipe; and the protocol's
+ * creative tab lists every aircraft and slung load with its chassis, and the sprayer, which Vanilla
+ * Wheels' tab leaves out.
  */
 @GameTestHolder(Rotorcraft.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -57,9 +63,35 @@ public final class EquipmentGameTests {
         helper.assertValueEqual(p.storage().map(VehicleProfile.Storage::slots).orElse(0), 108, "two chests of six rows");
         helper.assertTrue(p.cargo().isPresent() && p.cargo().get().adults() == 4, "room for four grown animals");
         helper.assertValueEqual(p.wheels().parts(), 0, "feet, not wheels");
+        helper.assertValueEqual(p.durability(), 8.0, "a truck's durability (Vanilla Wheels' D-0034)");
         Vehicle v = Vehicle.create(helper.getLevel(), CONTAINER, helper.absoluteVec(new Vec3(12, 2, 12)), 0.0f);
         helper.assertTrue(v instanceof SlungLoad, "made as a slung load: " + v);
         helper.succeed();
+    }
+
+    @GameTest(template = "farm", timeoutTicks = 20)
+    public void theAircraftTheLoadsAndTheSprayerAreInThisProtocolsTabAndNotInVanillaWheels(GameTestHelper helper) {
+        CreativeModeTab.ItemDisplayParameters params = new CreativeModeTab.ItemDisplayParameters(
+                helper.getLevel().enabledFeatures(), true, helper.getLevel().registryAccess());
+        CreativeModeTab ours = RotorcraftContent.CREATIVE_TAB.get();
+        ours.buildContents(params);
+        Set<ResourceLocation> vehicles = profiles(ours, ModContent.VEHICLE_ITEM.get()), chassis = profiles(ours, ModContent.CHASSIS.get());
+        for (ResourceLocation id : List.of(Rigs.BOX_HELI, Rigs.BOX_BOOM, Rigs.BOX_CRATE, CONTAINER)) {
+            helper.assertTrue(vehicles.contains(id) && chassis.contains(id), id + " and its chassis: " + vehicles);
+        }
+        helper.assertTrue(ours.getDisplayItems().stream().anyMatch(st -> st.is(RotorcraftContent.CROP_SPRAYER.get())), "the sprayer");
+        CreativeModeTab wheels = ModContent.CREATIVE_TAB.get();
+        wheels.buildContents(params);
+        Set<ResourceLocation> theirs = profiles(wheels, ModContent.VEHICLE_ITEM.get());
+        helper.assertTrue(!theirs.contains(Rigs.BOX_HELI) && !theirs.contains(CONTAINER), "none in Vanilla Wheels': " + theirs);
+        helper.assertTrue(wheels.getDisplayItems().stream().noneMatch(st -> st.is(RotorcraftContent.CROP_SPRAYER.get())), "nor the sprayer");
+        helper.succeed();
+    }
+
+    /** effects: the profiles of the vehicle items (or chassis), {@code item}, that {@code tab} lists */
+    private static Set<ResourceLocation> profiles(CreativeModeTab tab, net.minecraft.world.item.Item item) {
+        return tab.getDisplayItems().stream().filter(st -> st.is(item))
+                .map(st -> st.get(ModContent.VEHICLE.get())).collect(Collectors.toSet());
     }
 
     @GameTest(template = "farm", timeoutTicks = 20)

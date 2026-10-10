@@ -19,6 +19,7 @@ package com.chunkworks.rotorcraft.gametest;
 
 import com.chunkworks.rotorcraft.Aircraft;
 import com.chunkworks.rotorcraft.SlungLoad;
+import com.chunkworks.rotorcraft.domain.Flight;
 import com.chunkworks.rotorcraft.domain.FlightInput;
 import com.chunkworks.vanillawheels.Vehicle;
 import com.mojang.authlib.GameProfile;
@@ -107,6 +108,16 @@ final class Rigs {
     /** effects: returns the script's input: the stick, the pedal and the collective, its power and ground filled in by the truth each tick */
     static FlightInput fly(int forward, int turn, int lift) {
         return new FlightInput(forward, turn, lift, true, false, 0.0);
+    }
+
+    /**
+     * effects: the script lets go of the collective with it in its detent, as a pilot brings it there
+     * to hold the height, and flies by {@code forward} and {@code turn}: what letting go of the
+     * collective did before the lever (Rotorcraft 1.2.0)
+     */
+    static void level(Aircraft a, int forward, int turn) {
+        a.setScriptedFlight(fly(forward, turn, 0));
+        a.setCollective(Flight.HOVER);
     }
 
     /** A server player with a connection that goes nowhere, so key handlers, menus and messages take the real path. */

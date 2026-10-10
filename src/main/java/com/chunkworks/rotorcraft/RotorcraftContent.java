@@ -18,11 +18,18 @@
 package com.chunkworks.rotorcraft;
 
 import com.chunkworks.rotorcraft.api.Rotorcraft;
+import com.chunkworks.vanillawheels.ModContent;
+import com.chunkworks.vanillawheels.api.VanillaWheels;
 import com.mojang.serialization.Codec;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.EntityType;
@@ -49,6 +56,7 @@ public final class RotorcraftContent {
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Rotorcraft.MOD_ID);
     private static final DeferredRegister<DataComponentType<?>> COMPONENTS = DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, Rotorcraft.MOD_ID);
     private static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, Rotorcraft.MOD_ID);
+    private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, Rotorcraft.MOD_ID);
 
     /** Every aircraft: which one, its Vanilla Wheels profile says; how it flies, its aircraft profile. Seen from far off. */
     public static final DeferredHolder<EntityType<?>, EntityType<Aircraft>> AIRCRAFT = ENTITIES.register("aircraft",
@@ -86,14 +94,33 @@ public final class RotorcraftContent {
         ITEMS.register(modBus);
         COMPONENTS.register(modBus);
         SOUNDS.register(modBus);
+        TABS.register(modBus);
     }
 
-    /** Vanilla Wheels' own tab, where every vehicle already is: the sprayer goes beside them, and in Tools. */
-    private static final ResourceKey<CreativeModeTab> VANILLA_WHEELS_TAB = ResourceKey.create(Registries.CREATIVE_MODE_TAB,
-            com.chunkworks.vanillawheels.api.VanillaWheels.id("main"));
+    /**
+     * The protocol's own creative tab (Rusty, 2026-10-10: a pane for every mod with recipes): every
+     * aircraft, then every slung load, each with its chassis, then the Crop Sprayer. Vanilla Wheels
+     * leaves them out of its own (its D-0034).
+     */
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = TABS.register("main", () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.rotorcraft"))
+            .icon(() -> CROP_SPRAYER.get().getDefaultInstance())
+            .displayItems((parameters, output) -> {
+                List<ResourceLocation> all = parameters.holders().lookupOrThrow(VanillaWheels.VEHICLES).listElements()
+                        .map(holder -> holder.key().location())
+                        .sorted(Comparator.comparing(ResourceLocation::toString)).toList();
+                List<ResourceLocation> ours = new ArrayList<>();
+                all.stream().filter(id -> Rotorcraft.aircraft(parameters.holders(), id).isPresent()).forEach(ours::add);
+                all.stream().filter(id -> Rotorcraft.slingLoad(parameters.holders(), id).isPresent()).forEach(ours::add);
+                ours.forEach(id -> output.accept(ModContent.vehicleStack(id)));
+                ours.forEach(id -> output.accept(ModContent.chassisStack(id)));
+                output.accept(CROP_SPRAYER.get());
+            })
+            .build());
 
+    /** The sprayer in Tools too. */
     static void buildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == VANILLA_WHEELS_TAB || event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(CROP_SPRAYER);
         }
     }

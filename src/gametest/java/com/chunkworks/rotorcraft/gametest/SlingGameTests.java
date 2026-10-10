@@ -118,7 +118,7 @@ public final class SlingGameTests {
         a.setScriptedFlight(Rigs.fly(0, 0, 1));
         helper.startSequence()
                 .thenWaitUntil(() -> helper.assertTrue(a.getY() > y0 + 1.5, "up"))   // it carries on a block and a half as the climb dies: about three up, the rope's reach over a load
-                .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, 0)))
+                .thenExecute(() -> Rigs.level(a, 0, 0))
                 .thenIdle(30)
                 .thenExecute(() -> {
                     // A crate with a cow behind its doors and apples in its chest, set under the hovering hook.
@@ -142,15 +142,15 @@ public final class SlingGameTests {
                 .thenExecute(() -> {
                     a.hookKey(pilot);
                     helper.assertTrue(a.trailer() == crate[0], "the hook will not let go of a hanging load");
-                    a.setScriptedFlight(Rigs.fly(1, 0, 0));
+                    Rigs.level(a, 1, 0);
                 })
                 .thenWaitUntil(() -> helper.assertTrue(crate[0].getX() > start[0] + 10.0, "carried east:" + trace))
-                .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, 0)))
+                .thenExecute(() -> Rigs.level(a, 0, 0))
                 .thenIdle(60)
                 // From high enough that, held down, the helicopter reaches its full descent with the crate still far up.
                 .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, 1)))
                 .thenWaitUntil(() -> helper.assertTrue(crate[0].getY() > y0 + 10.0, "up again:" + trace))
-                .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, 0)))
+                .thenExecute(() -> Rigs.level(a, 0, 0))
                 .thenIdle(30)
                 .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, -1)))
                 .thenWaitUntil(() -> helper.assertTrue(crate[0].resting(), "set down:" + trace))
@@ -162,7 +162,7 @@ public final class SlingGameTests {
                     helper.assertTrue(a.hookPoint().y < crate[0].eyePoint().y + Aircraft.HOOK_CLEAR + 0.1,
                             "and came down onto it: " + (a.hookPoint().y - crate[0].eyePoint().y) + trace);
                     helper.assertValueEqual(a.condition(), Condition.MAX, "softly:" + trace);
-                    a.setScriptedFlight(Rigs.fly(0, 0, 0));
+                    Rigs.level(a, 0, 0);
                     a.hookKey(pilot);
                     helper.assertTrue(a.trailer() == null && crate[0].tower() == null, "let go once it rests");
                     helper.assertTrue(crate[0].getX() > start[0] + 15.0, "carried some way: " + (crate[0].getX() - start[0]));
@@ -247,7 +247,7 @@ public final class SlingGameTests {
         a.setScriptedFlight(Rigs.fly(0, 0, 1));
         helper.startSequence()
                 .thenWaitUntil(() -> helper.assertTrue(a.getY() > y0 + 1.5, "up"))   // it carries on a block and a half as the climb dies: about three up, the rope's reach over a load
-                .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, 0)))
+                .thenExecute(() -> Rigs.level(a, 0, 0))
                 .thenIdle(30)
                 .thenExecute(() -> {
                     Vec3 at = helper.relativeVec(a.hookPoint());
@@ -262,14 +262,14 @@ public final class SlingGameTests {
                     a.setScriptedFlight(Rigs.fly(0, 0, 1));
                 })
                 .thenWaitUntil(() -> helper.assertTrue(crate[0].getY() > y0 + 3.0, "lifted"))
-                .thenExecute(() -> a.setScriptedFlight(Rigs.fly(1, 0, 0)))
+                .thenExecute(() -> Rigs.level(a, 1, 0))
                 .thenWaitUntil(() -> helper.assertTrue(crate[0].getX() > helper.absoluteVec(new Vec3(15.0, 0, 0)).x, "heading over the pond"))
-                .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, 0)))
+                .thenExecute(() -> Rigs.level(a, 0, 0))
                 .thenIdle(60)
                 .thenExecute(() -> a.setScriptedFlight(Rigs.fly(0, 0, -1)))
                 .thenWaitUntil(() -> helper.assertTrue(crate[0].resting(), "set down on the water"))
                 .thenExecute(() -> {
-                    a.setScriptedFlight(Rigs.fly(0, 0, 0));
+                    Rigs.level(a, 0, 0);
                     a.hookKey(pilot);
                     helper.assertTrue(crate[0].tower() == null, "let go on the water");
                 })

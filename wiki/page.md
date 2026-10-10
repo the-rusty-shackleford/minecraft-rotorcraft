@@ -15,8 +15,8 @@ few seconds before it will lift off.
 |---|---|
 | **W / S** | fly forward / back |
 | **A / D** | turn |
-| **Space** | climb |
-| **Left Shift** | descend |
+| **Space** | collective up (climb) |
+| **Left Shift** | collective down (descend) |
 | **R** | get out |
 | **G** | hook or let go a load |
 | **V** | crop sprayer on / off |
@@ -26,8 +26,18 @@ The keys only work while you're in a helicopter. You can change them in Controls
 and get out are *Up*, *Down* and *Get out* under *Vanilla Wheels* (every vehicle that flies or dives
 shares them), the hook and the sprayer are under *Rotorcraft*. Things to know:
 
-- **Let go of everything and it hovers** in place.
-- **Holding Shift always lands softly.** It slows down by itself near the ground, from any height.
+- **The collective is a lever: it stays where you leave it.** Space pushes it up, Shift pulls it
+  down, and the dial over your hotbar shows where it is, lit up to the lever like a plane's
+  throttle. At the **middle notch** (the white tick at the top) the
+  helicopter holds its height; above it climbs and below it descends, faster the further you push.
+  The lever slows down as it passes the notch, so it's easy to stop there: from the top, about two
+  thirds of a second of Shift. When you get in, it's in the notch.
+- **W and S tilt the nose further the longer you hold them**, and the helicopter goes faster. Let
+  go and it levels out and slows to a hover.
+- **Pulling the lever all the way down always lands softly.** It slows down by itself near the
+  ground, from any height.
+- **You can change how the controls feel** in Mods, Rotorcraft, Config: how fast the lever moves,
+  the notch, how fast the stick tilts, and whether the stick stays tilted when you let go.
 - **Nobody aboard is ever hurt by flying.** Not by landing, not by crashing, not by falling.
 - **Crashing damages the helicopter**, though: flying into a wall or a roof fast, or hitting the
   ground faster than a soft landing. Repair it like any vehicle.
@@ -64,8 +74,8 @@ holding a lead to lead animals in, as with the Trailer.
 ![Its doors open, cows inside](img/container-open.webp)
 
 **Carrying it:** hover over it until the hook under the helicopter is just above the container's
-ring, and press **G**. Climb and it lifts off on its rope and swings along behind you. Hold **Shift**
-to set it down softly; the helicopter stops just above it. Press **G** again to let go (only once
+ring, and press **G**. Climb and it lifts off on its rope and swings along behind you. Pull the lever
+down with **Shift** to set it down softly; the helicopter stops just above it. Press **G** again to let go (only once
 it's on the ground). On the ground, crouching and right-clicking its ring empty-handed also lets it
 go. Animals in it are never hurt.
 
