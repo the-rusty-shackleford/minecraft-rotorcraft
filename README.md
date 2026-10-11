@@ -15,7 +15,7 @@ Sprayer**.
 the Shift mixin moved into Vanilla Wheels 1.13.0 (its D-0031), which a second protocol, the
 submarines, shares. Nothing changes in flight.
 
-**1.2.0** (unreleased) makes the collective a lever that stays where it is let go and the stick
+**1.2.0** (released, pack 1.82.0) makes the collective a lever that stays where it is let go and the stick
 tilt further the longer it is held (D-0005), gives the aircraft, the loads and the sprayer a creative
 tab of their own (**Rotorcraft**; Vanilla Wheels' tab keeps the ground vehicles), and the Sling
 Container a truck's durability, 8 (Vanilla Wheels 1.14.0's D-0034). It needs Vanilla Wheels 1.14.0.

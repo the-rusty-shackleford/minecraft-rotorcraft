@@ -14,7 +14,10 @@ flight, the sling and the crop sprayer; aircraft mods (`minecraft-huey`, `minecr
 data. The plan is `~/.claude/plans/i-want-to-add-curious-locket.md`. Decisions D-0001 (flight),
 D-0002 (sling), D-0003 (sprayer).
 
-## 1.2.0 — built and gated 2026-10-10, unreleased (the collective lever and its dial, D-0005; its own tab)
+## 1.2.0 — released 2026-10-11 in pack 1.82.0 (the collective lever and its dial, D-0005; its own tab)
+
+Released on Rusty's go ("Release the 2026-10-10 batch and Survivalist Armor 0.2.0. This is my go."), tag `v1.2.0` at `bf02fe8`, the release gate (2026-10-11, `clean build --no-build-cache`) green again on that commit; sha1 `1d4d2835` on GitHub and on the server (the server repo's `knowledge/releases/pack-1.82.0.md`). Not yet seen in play on the box.
+
 
 - **The collective is a lever** that stays where it is let go, holding the height in its detent at the
   middle; the **stick** tilts further the longer it is held and springs back level let go (D-0005).
