@@ -7,7 +7,7 @@ tags: [overview]
 
 # Rotorcraft
 
-## 1.2.1 — built and gated 2026-10-11, unreleased (on Vanilla Wheels 1.16.0: seats kept, a crew across a logout)
+## 1.2.1 — released 2026-10-12 in pack 1.85.0 (on Vanilla Wheels 1.16.0: seats kept, a crew across a logout)
 
 No code of its own changes. It nests Vanilla Wheels 1.16.0 (`[1.16,2.0)`, its D-0038) and requires it,
 because the crew's safety is there: OtatopMalloy died on the box on 2026-10-11 when he and Bobandy_ timed
@@ -26,7 +26,7 @@ them, and a crew member logging back in is seated again or stood on the ground.
 - Vanilla Wheels 1.16.0 also carries its D-0039: the server re-runs the pilot's reported move at the
   heading the client flew it at. The Huey's "moved wrongly" snap-backs on the box were a turning hull
   tested a tick behind. The gate above was re-run green with it in.
-- Not done: the release (Rusty's word); seeing it on the box.
+- Released on Rusty's go ("Proceed"), tag `v1.2.1` at `b49d8f0`; the release gate green on that commit; sha1 `bc58b2de` on GitHub and on the server (the server repo's `knowledge/releases/pack-1.85.0.md`). Not yet seen on the box: a crew logging out in the air.
 
 ## What this is
 
