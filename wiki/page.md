@@ -18,13 +18,14 @@ few seconds before it will lift off.
 | **Space** | collective up (climb) |
 | **Left Shift** | collective down (descend) |
 | **R** | get out |
+| **U** | take the controls, from another seat when the pilot's is empty |
 | **G** | hook or let go a load |
 | **V** | crop sprayer on / off |
 | **H** | lights |
 
 The keys only work while you're in a helicopter. You can change them in Controls: climb, descend
 and get out are *Up*, *Down* and *Get out* under *Vanilla Wheels* (every vehicle that flies or dives
-shares them), the hook and the sprayer are under *Rotorcraft*. Things to know:
+shares them), as is *Take the controls*; the hook and the sprayer are under *Rotorcraft*. Things to know:
 
 - **The collective is a lever: it stays where you leave it.** Space pushes it up, Shift pulls it
   down, and the dial over your hotbar shows where it is, lit up to the lever like a plane's
@@ -45,6 +46,11 @@ shares them), the hook and the sprayer are under *Rotorcraft*. Things to know:
   **Set a broken one down and repair it**: it stays where you put it, but it won't fly until it's
   repaired. Right-click it (each click costs a little hunger) or put it on a Mechanic Lift.
 - **Out of fuel in the air**, it glides down slowly on its spinning rotor and lands.
+- **If the pilot drops out, nobody is moved into the pilot's seat.** The helicopter settles to the
+  ground by itself, with everyone aboard unhurt, and anyone aboard can press **U** to take the controls.
+- **Logging out in the air:** alone, the helicopter goes with you and comes back with you. With crew
+  aboard it stays with them; when you log back in you're put back in your seat wherever it is now,
+  or, if it's gone, set down on the ground below where you left.
 - **You can only get out (R) within three blocks of the ground.** Shift never drops you out. You
   step down to the ground beside your seat, out of your own side's door (the other side's, if a
   wall is in the way).

@@ -7,6 +7,27 @@ tags: [overview]
 
 # Rotorcraft
 
+## 1.2.1 — built and gated 2026-10-11, unreleased (on Vanilla Wheels 1.16.0: seats kept, a crew across a logout)
+
+No code of its own changes. It nests Vanilla Wheels 1.16.0 (`[1.16,2.0)`, its D-0038) and requires it,
+because the crew's safety is there: OtatopMalloy died on the box on 2026-10-11 when he and Bobandy_ timed
+out of a hovering Huey; the pilot was saved standing in the air and the Huey went into Bobandy_'s save.
+Now a pilot gone hands the controls to nobody (the server brings the aircraft down, crew unhurt), U takes
+them, and a crew member logging back in is seated again or stood on the ground.
+- `CrewGameTests` (2), the box helicopter 26 blocks up with players logged out and in through the player
+  list: the pilot drops out, the crew keeps their seat and comes down in it unhurt, and the pilot logs back
+  in to their seat aboard it on the ground; and OtatopMalloy's night, the pilot stood on the ground
+  unhurt and the crew back in the aircraft and down in it unhurt. On Vanilla Wheels 1.14.0 (what 1.2.0
+  nests) both failed: "nobody is handed the controls: heli-crew"; "stood on the ground, not 25.9 blocks
+  over it".
+- Gate (`clean build --no-build-cache`, booth in software on a rootful Xwayland `:7`): 43 JUnit, 37
+  GameTests, the booth's 19 checks. The Huey 1.2.1 and the Chinook 1.1.1 rebuild on it (6 GameTests and
+  12 booth checks each).
+- Vanilla Wheels 1.16.0 also carries its D-0039: the server re-runs the pilot's reported move at the
+  heading the client flew it at. The Huey's "moved wrongly" snap-backs on the box were a turning hull
+  tested a tick behind. The gate above was re-run green with it in.
+- Not done: the release (Rusty's word); seeing it on the box.
+
 ## What this is
 
 The rotorcraft protocol (Rusty, 2026-10-06), layered on Vanilla Wheels 1.12.0 (its D-0030): the

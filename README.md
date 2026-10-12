@@ -29,6 +29,7 @@ Container a truck's durability, 8 (Vanilla Wheels 1.14.0's D-0034). It needs Van
 | Space | collective lever up: it stays where you let it go |
 | Left Shift | collective lever down (never gets you out, as in Immersive Aircraft) |
 | R | get out: only within three blocks of the ground |
+| U | take the controls: from another seat, into an empty pilot's seat (Vanilla Wheels' D-0038) |
 | G | hook a load, or let a resting one go |
 | V | crop sprayer on / off |
 | H | lights (Vanilla Wheels') |
@@ -64,6 +65,12 @@ Controls); G and V are rebound under Rotorcraft.
 - **Nobody aboard is ever hurt by flying.** No fall reaches a rider; it settles on water or lava
   and nobody goes under; it runs nothing over and breaks no glass or leaves. Riders cannot get
   out more than three blocks up ("Too high to get out").
+- **The pilot gone** (got out on the ground, or dropped out in the air), nobody is moved into the
+  pilot's seat (Vanilla Wheels 1.16.0, its D-0038): with nobody at the controls the server flies the
+  aircraft unpowered, and it settles to the ground with the crew unhurt; anyone aboard takes the
+  controls with U. A crew member who logs out in the air is seated again on logging back in, wherever
+  the aircraft is now, or stood on the ground under where they left if it is gone (the game takes an
+  aircraft into a save only with its one player aboard).
 - **Getting out** puts a rider on the ground beside their own seat, out of that side's door, just
   clear of the body (and of any hull box beside the seat); past a wall there, out of the other
   side's. Over water or a drop, they step out at the door at the aircraft's own height.
